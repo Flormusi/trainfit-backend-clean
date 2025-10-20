@@ -1,0 +1,70 @@
+import express from 'express';
+import cors from 'cors';
+import dotenv from 'dotenv';
+import cookieParser from 'cookie-parser';
+import authRoutes from './routes/auth.routes';
+import userRoutes from './routes/user.routes';
+import profileRoutes from './routes/profile.routes';
+import exerciseRoutes from './routes/exercise.routes';
+import workoutRoutes from './routes/workout.routes';
+import clientRoutes from './routes/client.routes';
+import progressRoutes from './routes/progress.routes';
+import clientProfileRoutes from './routes/clientProfile.routes'; // ✅ NUEVA LÍNEA
+
+// Load environment variables
+dotenv.config();
+
+// Initialize express app
+const app = express();
+
+// ✅ CORS dinámico compatible con Netlify, ngrok y desarrollo local
+const allowedOrigins = [
+  'http://localhost:3000',
+  'http://localhost:3001',
+  'http://localhost:5173',
+  'http://127.0.0.1:5173',
+];
+
+app.use(cors({
+  origin: (origin, callback) => {
+    if (
+      !origin ||
+      allowedOrigins.includes(origin) ||
+      origin.includes('netlify.app') ||
+      origin.includes('ngrok-free.app')
+    ) {
+      callback(null, true);
+    } else {
+      callback(new Error(`CORS blocked for origin: ${origin}`));
+    }
+  },
+  credentials: true,
+}));
+
+// Middleware
+app.use(express.json());
+app.use(cookieParser());
+
+// Routes
+app.use('/api/auth', authRoutes);
+app.use('/api/users', userRoutes);
+app.use('/api/profile', profileRoutes);
+app.use('/api/exercises', exerciseRoutes);
+app.use('/api/workouts', workoutRoutes);
+app.use('/api/clients', clientProfileRoutes); // primero
+app.use('/api/clients', clientRoutes); // después
+; // ✅ AÑADIDO AQUÍ
+
+app.use('/api/progress', progressRoutes);
+
+// Root route
+app.get('/', (req, res) => {
+  res.status(200).json({ message: 'Welcome to TrainFit API' });
+});
+
+// Health check route
+app.get('/health', (req, res) => {
+  res.status(200).json({ status: 'ok', message: 'Server is running' });
+});
+
+export default app;

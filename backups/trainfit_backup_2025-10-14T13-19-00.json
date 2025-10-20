@@ -1,0 +1,152 @@
+{
+  "timestamp": "2025-10-14T13:19:00.316Z",
+  "users": [
+    {
+      "id": "cmgpq9wbm0000f5blpol8nnab",
+      "email": "trainer.1760395913483@example.com",
+      "password": "$2b$10$7jN8YsZISZroP1S4/zIM9OUG6I34AS9zUNu0aVaNGWJ81uCw6w23G",
+      "role": "TRAINER",
+      "name": "Auto Test Trainer",
+      "createdAt": "2025-10-13T22:51:53.699Z",
+      "updatedAt": "2025-10-13T22:51:53.699Z",
+      "status": "active",
+      "resetPasswordExpire": null,
+      "resetPasswordToken": null,
+      "hasCompletedOnboarding": false
+    },
+    {
+      "id": "cmgqk4kux0000f53jt8b21f7d",
+      "email": "trainer.1760446053799@example.com",
+      "password": "$2b$10$1d4McGmCPB2jhOWoSC/B8u4zByleCnWkIukkxAAYQsjRG/bs4CCdu",
+      "role": "TRAINER",
+      "name": "Auto Test Trainer",
+      "createdAt": "2025-10-14T12:47:34.042Z",
+      "updatedAt": "2025-10-14T12:47:34.042Z",
+      "status": "active",
+      "resetPasswordExpire": null,
+      "resetPasswordToken": null,
+      "hasCompletedOnboarding": false
+    },
+    {
+      "id": "cmgqkc6qw0000f5tycpkie723",
+      "email": "trainer.test@example.com",
+      "password": "$2b$10$3Y9yaq8ozbTabFLe7exq6uAjSVkp2rpIE7kXxP4ZUevSlEonocRUu",
+      "role": "TRAINER",
+      "name": "Test Trainer",
+      "createdAt": "2025-10-14T12:53:29.000Z",
+      "updatedAt": "2025-10-14T12:53:29.000Z",
+      "status": "active",
+      "resetPasswordExpire": null,
+      "resetPasswordToken": null,
+      "hasCompletedOnboarding": false
+    },
+    {
+      "id": "cmgqkfeus0001f5tyno6ejrvx",
+      "email": "magagroca@gmail.com",
+      "password": "$2b$10$g8H8w5KasvEvLGv.GrSVE.NDkwlAUkS0pBzJThZ.a.3RhfD9Zn9B.",
+      "role": "TRAINER",
+      "name": "Maga Groca",
+      "createdAt": "2025-10-14T12:55:59.476Z",
+      "updatedAt": "2025-10-14T12:58:51.521Z",
+      "status": "active",
+      "resetPasswordExpire": null,
+      "resetPasswordToken": null,
+      "hasCompletedOnboarding": false
+    },
+    {
+      "id": "cmgqkp1980008f5tyzciedlhl",
+      "email": "florenciamusitani@gmail.com",
+      "password": "$2b$12$p5UVubuW1l0XdFB2839dlOxKK7CGKT9FC8PaDXbu.NrziLk6s437G",
+      "role": "CLIENT",
+      "name": "Flor Musitani",
+      "createdAt": "2025-10-14T13:03:28.412Z",
+      "updatedAt": "2025-10-14T13:03:28.412Z",
+      "status": "active",
+      "resetPasswordExpire": null,
+      "resetPasswordToken": null,
+      "hasCompletedOnboarding": false
+    }
+  ],
+  "clientProfiles": [
+    {
+      "id": "cmgqkp1980009f5ty84tvmkc5",
+      "userId": "cmgqkp1980008f5tyzciedlhl",
+      "name": "Flor Musitani",
+      "phone": null,
+      "goals": [],
+      "weight": null,
+      "medicalConditions": null,
+      "medications": null,
+      "injuries": null,
+      "createdAt": "2025-10-14T13:03:28.412Z",
+      "updatedAt": "2025-10-14T13:03:28.412Z",
+      "initialObjective": "Sin definir",
+      "trainingDaysPerWeek": 3,
+      "height": null,
+      "age": null,
+      "fitnessLevel": null,
+      "gender": null,
+      "nickname": null,
+      "profileImage": null,
+      "lastTrainingDate": null
+    }
+  ],
+  "trainerProfiles": [
+    {
+      "id": "cmgpq9wde0002f5blpxre0m3n",
+      "userId": "cmgpq9wbm0000f5blpol8nnab",
+      "name": "Auto Test Trainer",
+      "specialty": null,
+      "defaultPercentIncrement": 5
+    },
+    {
+      "id": "cmgqk4kwy0002f53jt4k99p5j",
+      "userId": "cmgqk4kux0000f53jt8b21f7d",
+      "name": "Auto Test Trainer",
+      "specialty": null,
+      "defaultPercentIncrement": 5
+    },
+    {
+      "id": "cmgqkmehd0003f5tynb0u34qr",
+      "userId": "cmgqkfeus0001f5tyno6ejrvx",
+      "name": "Maga Groca",
+      "specialty": null,
+      "defaultPercentIncrement": 7.5
+    }
+  ],
+  "routines": [
+    {
+      "id": "cmgqkp1a5000df5tywm3t7yjl",
+      "name": "Rutina Inicial",
+      "description": "Rutina inicial para nuevo cliente",
+      "duration": null,
+      "notes": null,
+      "trainerId": "cmgqkfeus0001f5tyno6ejrvx",
+      "clientId": "cmgqkp1980008f5tyzciedlhl",
+      "exercises": [],
+      "createdAt": "2025-10-14T13:03:28.446Z",
+      "updatedAt": "2025-10-14T13:03:28.446Z"
+    }
+  ],
+  "routineAssignments": [],
+  "progress": [],
+  "notifications": [],
+  "trainerClients": [
+    {
+      "id": "cmgqkp19x000bf5tyn7e6lz3w",
+      "trainerId": "cmgqkfeus0001f5tyno6ejrvx",
+      "clientId": "cmgqkp1980008f5tyzciedlhl",
+      "createdAt": "2025-10-14T13:03:28.438Z",
+      "updatedAt": "2025-10-14T13:03:28.438Z"
+    }
+  ],
+  "subscriptions": [],
+  "payments": [],
+  "exercises": [],
+  "nutritionPlans": [],
+  "appointments": [],
+  "messages": [],
+  "clientNotes": [],
+  "reminders": [],
+  "invoices": []
+}
