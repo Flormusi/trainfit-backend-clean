@@ -13,8 +13,7 @@
     "start:prod": "NODE_ENV=production node dist/server.js",
     "ops:backup": "node create_backup.js",
     "ops:reset:dev": "NODE_ENV=development ALLOW_DESTRUCTIVE_ACTIONS=true CONFIRM_RESET=YES node ops/safe_migrate_reset.js --approve --token=$APPROVAL_TOKEN",
-    "ops:sql:delete_clients:dev": "NODE_ENV=development ALLOW_DESTRUCTIVE_ACTIONS=true CONFIRM_SQL=YES node ops/safe_run_sql.js scripts/delete_clients.sql --approve --token=$APPROVAL_TOKEN"
-    ,
+    "ops:sql:delete_clients:dev": "NODE_ENV=development ALLOW_DESTRUCTIVE_ACTIONS=true CONFIRM_SQL=YES node ops/safe_run_sql.js scripts/delete_clients.sql --approve --token=$APPROVAL_TOKEN",
     "ops:token:rotate:dev": "NODE_ENV=development node ops/rotate_approval_token.js --approve --token=$APPROVAL_TOKEN",
     "ops:token:rotate:staging": "NODE_ENV=staging node ops/rotate_approval_token.js --approve --token=$APPROVAL_TOKEN"
   },
@@ -50,6 +49,7 @@
     "ics": "^3.8.1",
     "ipaddr.js": "^2.2.0",
     "joi": "^17.13.3",
+    "jsonwebtoken": "^9.0.2",
     "mercadopago": "^2.9.0",
     "multer": "^2.0.2",
     "node-cron": "^4.2.1",
