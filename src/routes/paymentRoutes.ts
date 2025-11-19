@@ -4,7 +4,7 @@ import {
   handlePaymentWebhook,
   getClientPaymentStatus,
   updateClientPayment
-} from '../controllers/paymentController';
+} from '../legacy/paymentController';
 import { authenticateToken } from '../middleware/authenticateToken';
 
 const router = Router();

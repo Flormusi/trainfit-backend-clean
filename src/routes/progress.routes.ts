@@ -1,36 +1,15 @@
 import express from 'express';
-import { protect } from '../middleware/auth.middleware';
-import {
-  getMyProgress,
-  getProgressRecord,
-  createProgressRecord,
-  updateProgressRecord,
-  deleteProgressRecord,
-  getProgressStats,
-  getProgressTimeline,
-  updateExerciseProgress
-} from '../controllers/progress.controller';
+import { protect, authorize } from '../middleware/auth.middleware';
+import { Role } from '@prisma/client';
+import { getClientProgress } from '../controllers/clientProgress.controller';
 
 const router = express.Router();
 
-// All routes are protected
+// Proteger y autorizar solo clientes
 router.use(protect);
+router.use(authorize([Role.CLIENT]));
 
-// Stats and timeline routes
-router.get('/stats', getProgressStats);
-router.get('/timeline', getProgressTimeline);
-
-// CRUD routes
-router.route('/')
-  .get(getMyProgress)
-  .post(createProgressRecord);
-
-router.route('/:id')
-  .get(getProgressRecord)
-  .put(updateProgressRecord)
-  .delete(deleteProgressRecord);
-
-// Exercise progress route
-router.post('/exercise/:exerciseId', updateExerciseProgress);
+// Ruta principal de progreso del cliente
+router.get('/', getClientProgress as express.RequestHandler);
 
 export default router;

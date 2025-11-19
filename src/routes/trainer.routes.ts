@@ -41,7 +41,7 @@ import {
   markAllNotificationsAsRead,
   getUnreadNotifications,
   createTestNotification
-} from '../controllers/trainerController';
+} from '../legacy/trainerController';
 import { addClientByTrainer, getClientById, getClientRoutines, deleteClient } from '../controllers/client.controller';
 import { protect, authorize } from '../middleware/auth.middleware';
 import { requestMiddleware } from '../middleware/request.middleware';

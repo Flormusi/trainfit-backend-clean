@@ -3,7 +3,7 @@
     "target": "ES2020",
     "lib": ["ES2015", "ES2017", "ES2020", "DOM"],
     "module": "commonjs",
-    "rootDir": ".",
+    "rootDir": "src",
     "outDir": "./dist",
     "esModuleInterop": true,
     "forceConsistentCasingInFileNames": true,
@@ -18,18 +18,11 @@
     ]
   },
   "include": [
-    "src/**/*",
-    "middleware/**/*",
-    "models/**/*",
-    "controllers/**/*",
-    "routes/**/*",
-    "server.ts",
-    "prisma/**/*",
-    "src/types/**/*" // <--- LÍNEA AGREGADA
+    "src/**/*"
   ],
   "exclude": [
+    "src/legacy/**/*",
     "node_modules",
-    "dist",
-    "src/tests"
+    "dist"
   ]
 }

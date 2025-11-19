@@ -17,8 +17,8 @@ import paymentReminderRoutes from './paymentReminderRoutes';
 import webhookRoutes from './webhook.routes';
 import whatsappRoutes from './whatsapp.routes';
 import calendarRoutes from './calendarRoutes';
-import calendarApiRoutes from './calendar';
 import securityRoutes from './security.routes';
+import exerciseRoutes from './exercise.routes';
 
 const router = Router();
 
@@ -40,6 +40,7 @@ router.use('/clients/progress', clientProgressRoutes);
 router.use('/clients/stats', clientStatsRoutes);
 router.use('/users', userRoutes);
 router.use('/trainer', trainerRoutes);
+router.use('/exercises', exerciseRoutes);
 router.use('/routines', routineRoutes);
 router.use('/routine-templates', routineTemplateRoutes);
 router.use('/routine-schedule', routineScheduleRoutes);
@@ -51,7 +52,6 @@ router.use('/payment-reminders', paymentReminderRoutes);
 router.use('/webhooks', webhookRoutes);
 router.use('/whatsapp', whatsappRoutes);
 router.use('/calendar', calendarRoutes);
-router.use('/calendar-api', calendarApiRoutes);
 router.use('/security', securityRoutes);
 
 export default router;

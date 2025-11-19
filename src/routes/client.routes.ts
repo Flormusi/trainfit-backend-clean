@@ -3,19 +3,10 @@ import express, { Response, NextFunction, Request } from 'express';
 import { protect, authorize } from '../middleware/auth.middleware';
 import { upload } from '../middleware/upload.middleware';
 import { getClientRoutines, addClientByTrainer, deleteClient, getPaymentStatus, sendMonthlyRoutineEmail, deleteAssignedRoutine } from '../controllers/client.controller';
-import { 
-  getClientNotifications, 
-  getUnreadNotificationsCount, 
-  markNotificationAsRead, 
-  markAllNotificationsAsRead,
-  getAssignedRoutines,
-  getRoutineDetails,
-  getClientProgress,
-  getClientPaymentStatus,
-  getClientProfile,
-  updateClientProfile,
-  uploadProfileImage
-} from '../controllers/clientController';
+import { getClientNotifications, getUnreadNotificationsCount, markNotificationAsRead, markAllNotificationsAsRead, uploadProfileImage } from '../legacy/clientController';
+import { getAssignedRoutines, getProfile as getClientProfile, createOrUpdateProfile as updateClientProfile } from '../controllers/clientProfile.controller';
+import { getClientProgress } from '../controllers/clientProgress.controller';
+import { getRoutineDetailsForClient as getRoutineDetails } from '../controllers/routine.controller';
 import { RequestWithUser } from '../types/express';
 import { Role } from '@prisma/client';
 
@@ -49,9 +40,10 @@ router.put('/:userId/notifications/mark-all-read', protect, authorize([Role.CLIE
 
 // Rutas adicionales para el dashboard del cliente
 router.get('/:userId/assigned-routines', protect, authorize([Role.CLIENT]), getAssignedRoutines);
-router.get('/routines/:routineId/details', protect, authorize([Role.CLIENT]), getRoutineDetails);
+router.get('/routines/:id/details', protect, authorize([Role.CLIENT]), getRoutineDetails);
 router.get('/:userId/progress', protect, authorize([Role.CLIENT]), getClientProgress);
-router.get('/:userId/payment-status', protect, authorize([Role.CLIENT]), getClientPaymentStatus);
+// Usar el handler actual basado en Prisma para estado de pago
+router.get('/:userId/payment-status', protect, authorize([Role.CLIENT]), getPaymentStatus);
 router.get('/:userId/profile', protect, authorize([Role.CLIENT]), getClientProfile);
 router.put('/:userId/profile', protect, authorize([Role.CLIENT]), updateClientProfile);
 // Middleware para manejar errores de multer

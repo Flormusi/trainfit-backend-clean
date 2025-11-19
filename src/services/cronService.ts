@@ -378,11 +378,12 @@ export class CronService {
       `;
     }
 
-    return await EmailService.sendEmail({
+    const result = await EmailService.sendEmail({
       to: clientEmail,
       subject: subject,
       html: emailContent
     });
+    return result.success;
   }
 
   /**

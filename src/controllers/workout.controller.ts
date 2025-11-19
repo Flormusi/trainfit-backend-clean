@@ -1,13 +1,12 @@
 import { Request, Response } from 'express';
-import prisma from '../models/exercise.model';
-import { Exercise } from '../models/exercise.model';
+import prisma from '../utils/prisma';
 
 // @desc    Create new workout
 // @route   POST /api/workouts
 // @access  Private
 export const createWorkout = async (req: Request, res: Response) => {
   try {
-    const { name, description, type, difficulty, equipment, muscles = [] } = req.body;
+    const { name, description, type, difficulty, equipment, muscles = [], imageUrl, videoUrl } = req.body;
     const trainerId = (req as any).user.id;
 
     const exercise = await prisma.exercise.create({
@@ -18,6 +17,8 @@ export const createWorkout = async (req: Request, res: Response) => {
         difficulty,
         equipment,
         muscles,
+        imageUrl,
+        videoUrl,
         trainerId
       }
     });
@@ -115,7 +116,7 @@ export const getWorkout = async (req: Request, res: Response) => {
 export const updateWorkout = async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
-    const { name, description, type, difficulty, equipment, muscles } = req.body;
+    const { name, description, type, difficulty, equipment, muscles, imageUrl, videoUrl } = req.body;
     const trainerId = (req as any).user.id;
 
     const exercise = await prisma.exercise.findUnique({
@@ -144,7 +145,9 @@ export const updateWorkout = async (req: Request, res: Response) => {
         type,
         difficulty,
          equipment,
-         muscles
+         muscles,
+         imageUrl,
+         videoUrl
        }
      });
 
