@@ -56,14 +56,14 @@ const sendTokenResponse = (user: User, statusCode: number, res: Response): void 
     cookieExpiresInMs = parseInt(expiresInOption) * 1000; 
   }
 
-  const robustCookieOptions: any = {
-    expires: new Date(Date.now() + cookieExpiresInMs),
-    httpOnly: true,
-    secure: process.env.NODE_ENV === 'production',
-    sameSite: 'lax' as const,
-    path: '/',
-    domain: 'localhost'
-  };
+ const robustCookieOptions = {
+  expires: new Date(Date.now() + cookieExpiresInMs),
+  httpOnly: true,
+  secure: process.env.NODE_ENV === 'production',
+  sameSite: 'lax' as const,
+  path: '/'
+  // ❌ domain eliminado para que sea dinámico
+};
 
   const { password, resetPasswordToken, resetPasswordExpire, ...userOutput } = user;
 
@@ -179,13 +179,14 @@ export const login = async (req: Request, res: Response): Promise<void> => {
     const { password, ...userData } = user;
 
     const cookieOptions = {
-      expires: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000), // 30 días
-      httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
-      sameSite: 'lax' as const,
-      path: '/',
-      domain: 'localhost'
-    };
+  expires: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
+  httpOnly: true,
+  secure: process.env.NODE_ENV === 'production',
+  sameSite: 'lax' as const,
+  path: '/'
+  // ❌ domain eliminado
+};
+
 
     res.status(200)
        .cookie('token', token, cookieOptions)
