@@ -36,13 +36,18 @@ app.use(cors({
     const netlifyRegex = /^https?:\/\/([a-z0-9-]+\.)?netlify\.app$/i;
     // Permitir dominios de ngrok
     const ngrokRegex = /^https?:\/\/[a-z0-9-]+\.ngrok\.io$/i;
+    // Permitir dominios de Vercel (deployments y previews)
+const vercelRegex = /^https?:\/\/.*\.vercel\.app$/i;
+
 
     if (
-      allowedOrigins.includes(origin) ||
-      localNetworkRegex.test(origin) ||
-      netlifyRegex.test(origin) ||
-      ngrokRegex.test(origin)
-    ) {
+  allowedOrigins.includes(origin) ||
+  localNetworkRegex.test(origin) ||
+  netlifyRegex.test(origin) ||
+  ngrokRegex.test(origin) ||
+  vercelRegex.test(origin)
+) {
+
       callback(null, true);
     } else {
       console.log(`CORS bloqueado para origen: ${origin}`);
