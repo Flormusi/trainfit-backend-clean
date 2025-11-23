@@ -5,16 +5,13 @@ import app from './app';
 
 dotenv.config();
 
-const PORT = process.env.PORT ? Number(process.env.PORT) : 3001;
+const PORT = Number(process.env.PORT || 10000);
 
 const server = http.createServer(app);
 
 const io = new Server(server, {
   cors: {
-    origin: [
-      'https://trainfit.vercel.app',
-      'http://localhost:5173'
-    ],
+    origin: true,
     credentials: true
   }
 });
@@ -36,7 +33,7 @@ server.listen(PORT, () => {
   console.log(`✅ Backend + WebSocket corriendo en puerto ${PORT}`);
 });
 
-// Graceful shutdown
+// Graceful shutdown solo una vez
 const shutdown = (reason: string) => {
   console.log(`Shutting down server: ${reason}`);
   server.close(() => {
@@ -55,6 +52,7 @@ process.on('unhandledRejection', (reason) => {
   console.error('Unhandled Rejection:', reason);
   shutdown('unhandledRejection');
 });
+
 
 process.on('unhandledRejection', (reason) => {
   console.error('Unhandled Rejection:', reason);
