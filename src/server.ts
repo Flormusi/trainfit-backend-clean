@@ -1,5 +1,6 @@
 import http from 'http';
 import dotenv from 'dotenv';
+import { Server } from 'socket.io';
 import app from './app';
 
 dotenv.config();
@@ -8,8 +9,31 @@ const PORT = process.env.PORT ? Number(process.env.PORT) : 3001;
 
 const server = http.createServer(app);
 
+const io = new Server(server, {
+  cors: {
+    origin: [
+      'https://trainfit.vercel.app',
+      'http://localhost:5173'
+    ],
+    credentials: true
+  }
+});
+
+io.on('connection', (socket) => {
+  console.log('🔌 Cliente conectado:', socket.id);
+
+  socket.on('join-user-room', (userId) => {
+    socket.join(`user-${userId}`);
+    console.log(`👤 Usuario ${userId} unido a su sala`);
+  });
+
+  socket.on('disconnect', () => {
+    console.log('❌ Cliente desconectado:', socket.id);
+  });
+});
+
 server.listen(PORT, () => {
-  console.log(`Backend server listening on port ${PORT}`);
+  console.log(`✅ Backend + WebSocket corriendo en puerto ${PORT}`);
 });
 
 // Graceful shutdown
@@ -23,10 +47,13 @@ const shutdown = (reason: string) => {
 
 process.on('SIGINT', () => shutdown('SIGINT'));
 process.on('SIGTERM', () => shutdown('SIGTERM'));
-
 process.on('uncaughtException', (err) => {
   console.error('Uncaught Exception:', err);
   shutdown('uncaughtException');
+});
+process.on('unhandledRejection', (reason) => {
+  console.error('Unhandled Rejection:', reason);
+  shutdown('unhandledRejection');
 });
 
 process.on('unhandledRejection', (reason) => {
