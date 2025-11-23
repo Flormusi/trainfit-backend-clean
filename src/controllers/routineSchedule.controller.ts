@@ -83,6 +83,7 @@ export const createRoutineSchedule = async (req: RequestWithUser, res: Response)
         endTime: new Date(endTime),
         trainerId: userId,
         clientId: clientId || userId,
+        type: 'ROUTINE' as any,
         location: location || '',
         notes: notes || ''
       },

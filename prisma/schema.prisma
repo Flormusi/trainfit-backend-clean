@@ -220,6 +220,7 @@ model Appointment {
   description String?
   startTime   DateTime
   endTime     DateTime
+  type        AppointmentType   @default(SESSION)
   status      AppointmentStatus @default(SCHEDULED)
   location    String?
   notes       String?
@@ -234,6 +235,7 @@ model Appointment {
   @@index([startTime])
   @@index([clientId])
   @@index([trainerId])
+  @@index([type])
 }
 
 model Reminder {
@@ -351,6 +353,12 @@ enum AppointmentStatus {
   CANCELLED
   COMPLETED
   NO_SHOW
+}
+
+enum AppointmentType {
+  SESSION
+  CONSULTATION
+  ROUTINE
 }
 
 enum ReminderType {

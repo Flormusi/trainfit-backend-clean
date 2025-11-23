@@ -11,7 +11,7 @@ const calendarService = new CalendarService();
 router.get('/', authenticateToken, async (req, res) => {
   try {
     const userId = req.user?.id;
-    const { startDate, endDate, status } = req.query;
+    const { startDate, endDate, status, type } = req.query;
     
     if (!userId) {
       return res.status(401).json({ message: 'Usuario no autenticado' });
@@ -34,6 +34,14 @@ router.get('/', authenticateToken, async (req, res) => {
 
     if (status) {
       whereClause.status = status;
+    }
+
+    // Filtro por tipo usando enum real en Appointment.type
+    if (type) {
+      const typeUpper = String(type).toUpperCase();
+      if (["SESSION", "CONSULTATION", "ROUTINE"].includes(typeUpper)) {
+        (whereClause as any).type = typeUpper;
+      }
     }
 
     const appointments = await prisma.appointment.findMany({
@@ -87,6 +95,7 @@ router.post('/', authenticateToken, async (req, res) => {
       trainerId, 
       location, 
       notes,
+      type,
       createReminders = true
     } = req.body;
     
@@ -153,6 +162,18 @@ router.post('/', authenticateToken, async (req, res) => {
       return res.status(409).json({ message: 'Ya existe una cita en ese horario' });
     }
 
+    // Normalizar tipo
+    const typeNormalized = String(type || '').trim().toLowerCase();
+    const typeMap: Record<string, string> = {
+      session: 'SESSION',
+      sesion: 'SESSION',
+      consultation: 'CONSULTATION',
+      consulta: 'CONSULTATION',
+      routine: 'ROUTINE',
+      rutina: 'ROUTINE'
+    };
+    const typeEnum = typeMap[typeNormalized] || 'SESSION';
+
     // Crear la cita
     const appointment = await prisma.appointment.create({
       data: {
@@ -162,6 +183,7 @@ router.post('/', authenticateToken, async (req, res) => {
         endTime: new Date(endTime),
         clientId: finalClientId,
         trainerId: finalTrainerId,
+        type: typeEnum as any,
         location,
         notes
       },
@@ -262,7 +284,7 @@ router.put('/:appointmentId', authenticateToken, async (req, res) => {
   try {
     const userId = req.user?.id;
     const appointmentId = req.params.appointmentId;
-    const { title, description, startTime, endTime, status, location, notes } = req.body;
+    const { title, description, startTime, endTime, status, location, notes, type } = req.body;
     
     if (!userId) {
       return res.status(401).json({ message: 'Usuario no autenticado' });
@@ -291,6 +313,19 @@ router.put('/:appointmentId', authenticateToken, async (req, res) => {
     if (status) updateData.status = status;
     if (location !== undefined) updateData.location = location;
     if (notes !== undefined) updateData.notes = notes;
+
+    if (type !== undefined) {
+      const typeNormalized = String(type || '').trim().toLowerCase();
+      const typeMap: Record<string, string> = {
+        session: 'SESSION',
+        sesion: 'SESSION',
+        consultation: 'CONSULTATION',
+        consulta: 'CONSULTATION',
+        routine: 'ROUTINE',
+        rutina: 'ROUTINE'
+      };
+      updateData.type = (typeMap[typeNormalized] || 'SESSION') as any;
+    }
 
     const updatedAppointment = await prisma.appointment.update({
       where: { id: appointmentId },
