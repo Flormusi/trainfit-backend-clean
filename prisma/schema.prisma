@@ -9,48 +9,48 @@ datasource db {
 }
 
 model User {
-  id                          String              @id @default(cuid())
-  email                       String              @unique
+  id                          String                @id @default(cuid())
+  email                       String                @unique
   password                    String
-  role                        Role                @default(CLIENT)
+  role                        Role                  @default(CLIENT)
   name                        String?
-  createdAt                   DateTime            @default(now())
-  updatedAt                   DateTime            @updatedAt
-  status                      String?             @default("active")
+  createdAt                   DateTime              @default(now())
+  updatedAt                   DateTime              @updatedAt
+  status                      String?               @default("active")
   resetPasswordExpire         DateTime?
   resetPasswordToken          String?
-  hasCompletedOnboarding      Boolean             @default(false)
-  appointmentsAsClient        Appointment[]       @relation("ClientAppointments")
-  appointmentsAsTrainer       Appointment[]       @relation("TrainerAppointments")
-  clientNotes                 ClientNote[]        @relation("ClientNotesRel")
-  trainerNotes                ClientNote[]        @relation("TrainerNotesRel")
+  hasCompletedOnboarding      Boolean               @default(false)
+  appointmentsAsClient        Appointment[]         @relation("ClientAppointments")
+  appointmentsAsTrainer       Appointment[]         @relation("TrainerAppointments")
+  clientNotes                 ClientNote[]          @relation("ClientNotesRel")
+  trainerNotes                ClientNote[]          @relation("TrainerNotesRel")
   clientProfile               ClientProfile?
   exercises                   Exercise[]
   invoices                    Invoice[]
-  receivedMessages            Message[]           @relation("ReceivedMessages")
-  sentMessages                Message[]           @relation("SentMessages")
+  receivedMessages            Message[]             @relation("ReceivedMessages")
+  sentMessages                Message[]             @relation("SentMessages")
   notifications               Notification[]
-  assignedNutritionPlans      NutritionPlan[]     @relation("ClientNutritionPlans")
-  createdNutritionPlans       NutritionPlan[]     @relation("TrainerNutritionPlans")
+  assignedNutritionPlans      NutritionPlan[]       @relation("ClientNutritionPlans")
+  createdNutritionPlans       NutritionPlan[]       @relation("TrainerNutritionPlans")
   progressRecords             Progress[]
   reminders                   Reminder[]
-  assignedRoutines            Routine[]           @relation("ClientRoutines")
-  createdRoutines             Routine[]           @relation("TrainerRoutines")
-  routineAssignmentsAsClient  RoutineAssignment[] @relation("ClientAssignments")
-  routineAssignmentsAsTrainer RoutineAssignment[] @relation("TrainerAssignments")
+  assignedRoutines            Routine[]             @relation("ClientRoutines")
+  createdRoutines             Routine[]             @relation("TrainerRoutines")
+  routineAssignmentsAsClient  RoutineAssignment[]   @relation("ClientAssignments")
+  routineAssignmentsAsTrainer RoutineAssignment[]   @relation("TrainerAssignments")
   subscription                Subscription?
-  trainersAsClient            TrainerClient[]     @relation("ClientRelation")
-  clientsAsTrainer            TrainerClient[]     @relation("TrainerRelation")
+  trainersAsClient            TrainerClient[]       @relation("ClientRelation")
+  clientsAsTrainer            TrainerClient[]       @relation("TrainerRelation")
   trainerProfile              TrainerProfile?
-  createdTemplates            RoutineTemplate[]   @relation("CreatedTemplates")
-  trainerPayments             PaymentPreference[] @relation("TrainerPayments")
-  clientPayments              PaymentPreference[] @relation("ClientPayments")
+  createdTemplates            RoutineTemplate[]     @relation("CreatedTemplates")
+  trainerPayments             PaymentPreference[]   @relation("TrainerPayments")
+  clientPayments              PaymentPreference[]   @relation("ClientPayments")
   calendarIntegrations        CalendarIntegration[] @relation("ClientCalendarIntegrations")
 }
 
 model ClientProfile {
-  id                  String   @id @default(cuid())
-  userId              String   @unique
+  id                  String    @id @default(cuid())
+  userId              String    @unique
   name                String
   phone               String?
   goals               String[]
@@ -58,10 +58,10 @@ model ClientProfile {
   medicalConditions   String?
   medications         String?
   injuries            String?
-  createdAt           DateTime @default(now())
-  updatedAt           DateTime @updatedAt
-  initialObjective    String   @default("Sin definir")
-  trainingDaysPerWeek Int      @default(3)
+  createdAt           DateTime  @default(now())
+  updatedAt           DateTime  @updatedAt
+  initialObjective    String    @default("Sin definir")
+  trainingDaysPerWeek Int       @default(3)
   height              Float?
   age                 Int?
   fitnessLevel        String?
@@ -69,7 +69,8 @@ model ClientProfile {
   nickname            String?
   profileImage        String?
   lastTrainingDate    DateTime?
-  user                User     @relation(fields: [userId], references: [id])
+  membershipTier      String?
+  user                User      @relation(fields: [userId], references: [id])
 }
 
 model Routine {
@@ -115,12 +116,12 @@ model ClientNote {
 }
 
 model TrainerProfile {
-  id        String  @id @default(cuid())
-  userId    String  @unique
-  name      String
-  specialty String?
-  defaultPercentIncrement Float? @default(7.5)
-  user      User    @relation(fields: [userId], references: [id])
+  id                      String  @id @default(cuid())
+  userId                  String  @unique
+  name                    String
+  specialty               String?
+  defaultPercentIncrement Float?  @default(7.5)
+  user                    User    @relation(fields: [userId], references: [id])
 }
 
 model Exercise {
@@ -180,21 +181,21 @@ model Notification {
 }
 
 model RoutineAssignment {
-  id                      String   @id @default(cuid())
-  clientId                String
-  routineId               String
-  trainerId               String
-  startDate               DateTime
-  endDate                 DateTime
-  assignedDate            DateTime @default(now())
-  trainingObjectives      Json?    // Array de objetivos: ["strength", "hypertrophy", "endurance"]
-  pyramidalRepsPattern    String?  // Patrón piramidal seleccionado: "ascending", "descending", "diamond", "custom"
-  pyramidalRepsSequence   Json?    // Secuencia personalizada: [8, 10, 12, 10, 8]
-  createdAt               DateTime @default(now())
-  updatedAt               DateTime @updatedAt
-  client                  User     @relation("ClientAssignments", fields: [clientId], references: [id], onDelete: Cascade)
-  routine                 Routine  @relation(fields: [routineId], references: [id], onDelete: Cascade)
-  trainer                 User     @relation("TrainerAssignments", fields: [trainerId], references: [id], onDelete: Cascade)
+  id                    String   @id @default(cuid())
+  clientId              String
+  routineId             String
+  trainerId             String
+  startDate             DateTime
+  endDate               DateTime
+  assignedDate          DateTime @default(now())
+  trainingObjectives    Json? // Array de objetivos: ["strength", "hypertrophy", "endurance"]
+  pyramidalRepsPattern  String? // Patrón piramidal seleccionado: "ascending", "descending", "diamond", "custom"
+  pyramidalRepsSequence Json? // Secuencia personalizada: [8, 10, 12, 10, 8]
+  createdAt             DateTime @default(now())
+  updatedAt             DateTime @updatedAt
+  client                User     @relation("ClientAssignments", fields: [clientId], references: [id], onDelete: Cascade)
+  routine               Routine  @relation(fields: [routineId], references: [id], onDelete: Cascade)
+  trainer               User     @relation("TrainerAssignments", fields: [trainerId], references: [id], onDelete: Cascade)
 }
 
 model Message {
@@ -319,21 +320,21 @@ model Invoice {
 }
 
 model RoutineTemplate {
-  id                    String   @id @default(cuid())
-  name                  String
-  description           String?
-  trainingObjective     String   // "fuerza", "hipertrofia", "resistencia", "definicion", "funcional"
-  level                 String   // "principiante", "intermedio", "avanzado"
-  daysPerWeek           Int      // Número de días por semana
-  gender                String?  // "masculino", "femenino", "unisex"
-  duration              String?  // Duración estimada de la sesión
-  exercises             Json     // Array de ejercicios con estructura similar a Routine
-  notes                 String?
-  isActive              Boolean  @default(true)
-  createdBy             String   // ID del entrenador que creó la plantilla
-  createdAt             DateTime @default(now())
-  updatedAt             DateTime @updatedAt
-  creator               User     @relation("CreatedTemplates", fields: [createdBy], references: [id])
+  id                String   @id @default(cuid())
+  name              String
+  description       String?
+  trainingObjective String // "fuerza", "hipertrofia", "resistencia", "definicion", "funcional"
+  level             String // "principiante", "intermedio", "avanzado"
+  daysPerWeek       Int // Número de días por semana
+  gender            String? // "masculino", "femenino", "unisex"
+  duration          String? // Duración estimada de la sesión
+  exercises         Json // Array de ejercicios con estructura similar a Routine
+  notes             String?
+  isActive          Boolean  @default(true)
+  createdBy         String // ID del entrenador que creó la plantilla
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+  creator           User     @relation("CreatedTemplates", fields: [createdBy], references: [id])
 
   @@index([trainingObjective])
   @@index([level])
@@ -402,7 +403,7 @@ enum InvoiceStatus {
 model CalendarIntegration {
   id           String   @id @default(cuid())
   clientId     String
-  provider     String   // 'google', 'outlook', 'icloud'
+  provider     String // 'google', 'outlook', 'icloud'
   accessToken  String
   refreshToken String
   expiresAt    DateTime

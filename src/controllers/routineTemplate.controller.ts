@@ -397,7 +397,7 @@ export const duplicateRoutineTemplate = async (req: RequestWithUser, res: Respon
         daysPerWeek: originalTemplate.daysPerWeek,
         gender: originalTemplate.gender,
         duration: originalTemplate.duration,
-        exercises: originalTemplate.exercises,
+        exercises: originalTemplate.exercises as any,
         notes: originalTemplate.notes,
         createdBy: userId
       },

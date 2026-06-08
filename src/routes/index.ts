@@ -8,25 +8,14 @@ import userRoutes from './user.routes';
 import trainerRoutes from './trainer.routes';
 import routineRoutes from './routine.routes';
 import routineTemplateRoutes from './routineTemplate.routes';
-import routineScheduleRoutes from './routineSchedule.routes';
 import messageRoutes from './messageRoutes';
 import appointmentRoutes from './appointmentRoutes';
 import reminderRoutes from './reminderRoutes';
-import paymentRoutes from './paymentRoutes';
+import paymentRoutes from './payment.routes';
 import paymentReminderRoutes from './paymentReminderRoutes';
 import webhookRoutes from './webhook.routes';
-import whatsappRoutes from './whatsapp.routes';
-import calendarRoutes from './calendarRoutes';
-import securityRoutes from './security.routes';
-import exerciseRoutes from './exercise.routes';
 
 const router = Router();
-
-// Log para debug - verificar si las peticiones llegan al enrutador
-router.use((req, res, next) => {
-    console.log(`[ROUTER DEBUG] ${req.method} ${req.path} - ${new Date().toISOString()}`);
-    next();
-});
 
 // Health check route
 router.get('/health', (req, res) => {
@@ -40,18 +29,13 @@ router.use('/clients/progress', clientProgressRoutes);
 router.use('/clients/stats', clientStatsRoutes);
 router.use('/users', userRoutes);
 router.use('/trainer', trainerRoutes);
-router.use('/exercises', exerciseRoutes);
 router.use('/routines', routineRoutes);
 router.use('/routine-templates', routineTemplateRoutes);
-router.use('/routine-schedule', routineScheduleRoutes);
 router.use('/messages', messageRoutes);
 router.use('/appointments', appointmentRoutes);
 router.use('/reminders', reminderRoutes);
 router.use('/payments', paymentRoutes);
 router.use('/payment-reminders', paymentReminderRoutes);
 router.use('/webhooks', webhookRoutes);
-router.use('/whatsapp', whatsappRoutes);
-router.use('/calendar', calendarRoutes);
-router.use('/security', securityRoutes);
 
 export default router;

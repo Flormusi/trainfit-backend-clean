@@ -5,8 +5,9 @@ import {
   getExercises,
   createExercise,
   getTrainerClients,
-  getAnalytics
-} from '../controllers/trainer.controller.improved';
+  getAnalytics,
+  getChartsData
+} from '../controllers/trainerController';
 
 // Importar el resto de funciones del controlador original
 import {
@@ -27,8 +28,6 @@ import {
   removeClientRoutine,
   resendRoutineEmail,
   updateClientInfo,
-  updateClientPayment,
-  getClientPaymentStatus,
   getNutritionPlans,
   createNutritionPlan,
   updateNutritionPlan,
@@ -41,8 +40,8 @@ import {
   markAllNotificationsAsRead,
   getUnreadNotifications,
   createTestNotification
-} from '../legacy/trainerController';
-import { addClientByTrainer, getClientById, getClientRoutines, deleteClient } from '../controllers/client.controller';
+} from '../controllers/trainerController';
+import { addClientByTrainer, getClientById, getClientRoutines } from '../controllers/client.controller';
 import { protect, authorize } from '../middleware/auth.middleware';
 import { requestMiddleware } from '../middleware/request.middleware';
 import { Role } from '@prisma/client';
@@ -50,21 +49,12 @@ import { RequestWithUser } from '../types/express';
 
 const router = Router();
 
-// Log para debug de rutas del entrenador
-router.use((req, res, next) => {
-  console.log('🎯 trainer.routes.ts - Petición recibida:', req.method, req.path);
-  next();
-});
-
 // Client management
 router.get('/clients', protect, requestMiddleware, authorize([Role.TRAINER]), getTrainerClients);
 router.post('/clients', protect, requestMiddleware, authorize([Role.TRAINER]), addClientByTrainer);
 router.get('/clients/:clientId', protect, requestMiddleware, authorize([Role.TRAINER]), getClientById);
 router.put('/clients/:clientId', protect, requestMiddleware, authorize([Role.TRAINER]), updateClientInfo);
-router.put('/clients/:clientId/payment', protect, requestMiddleware, authorize([Role.TRAINER]), updateClientPayment);
-router.get('/clients/:clientId/payment', protect, requestMiddleware, authorize([Role.TRAINER]), getClientPaymentStatus);
 router.get('/clients/:clientId/routines', protect, requestMiddleware, authorize([Role.TRAINER]), getClientRoutines);
-router.delete('/clients/:clientId', protect, requestMiddleware, authorize([Role.TRAINER]), deleteClient);
 router.delete('/clients/:clientId/routines/:routineId', protect, requestMiddleware, authorize([Role.TRAINER]), removeClientRoutine);
 router.post('/clients/:clientId/routines/:routineId/resend-email', protect, requestMiddleware, authorize([Role.TRAINER]), resendRoutineEmail);
 router.get('/clients/:clientId/progress', protect, requestMiddleware, authorize([Role.TRAINER]), getClientProgressByTrainer);
@@ -100,6 +90,7 @@ router.get('/profile', protect, requestMiddleware, authorize([Role.TRAINER]), ge
 router.put('/profile', protect, requestMiddleware, authorize([Role.TRAINER]), updateProfile);
 
 router.get('/analytics', protect, requestMiddleware, authorize([Role.TRAINER]), getAnalytics);
+router.get('/analytics/charts', protect, requestMiddleware, authorize([Role.TRAINER]), getChartsData);
 
 // Obtener notificaciones del cliente
 router.get('/notifications', protect, requestMiddleware, authorize([Role.TRAINER]), getClientNotifications);

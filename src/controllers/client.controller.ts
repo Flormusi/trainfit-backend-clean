@@ -4,9 +4,6 @@ import { PrismaClient, Role, Prisma } from '@prisma/client';
 import { Request, Response } from 'express';
 import { CustomError } from '../types/error';
 import nodemailer from 'nodemailer';
-import { EmailService } from '../services/emailService';
-import type { EmailResult } from '../services/emailService';
-import { generateSecureTemporaryPassword } from '../utils/passwordGenerator';
 
 const prisma = new PrismaClient();
 
@@ -28,36 +25,17 @@ const enrichRoutineExercises = async (routines: any[]) => {
             if (exerciseData) {
               return {
                 ...exercise,
-                image_url: exerciseData.imageUrl || null,
-                imageUrl: exerciseData.imageUrl || null, // Mantener ambos para compatibilidad
+                imageUrl: exerciseData.imageUrl,
                 description: exerciseData.description,
                 type: exerciseData.type,
                 equipment: exerciseData.equipment,
                 difficulty: exerciseData.difficulty,
-                muscles: exerciseData.muscles,
-                weightsPerSeries: Array.isArray((exercise as any).weightsPerSeries)
-                  ? (exercise as any).weightsPerSeries
-                  : (typeof exercise.weight === 'string' && exercise.weight.includes('-')
-                      ? exercise.weight.split('-').map((w: string) => {
-                          const n = parseFloat(String(w).replace(',', '.'));
-                          return isNaN(n) ? 0 : Math.round(n * 10) / 10;
-                        })
-                      : (exercise as any).weightsPerSeries)
+                muscles: exerciseData.muscles
               };
             }
 
             // If not found, return the original exercise
-            return {
-              ...exercise,
-              weightsPerSeries: Array.isArray((exercise as any).weightsPerSeries)
-                ? (exercise as any).weightsPerSeries
-                : (typeof exercise.weight === 'string' && exercise.weight.includes('-')
-                    ? exercise.weight.split('-').map((w: string) => {
-                        const n = parseFloat(String(w).replace(',', '.'));
-                        return isNaN(n) ? 0 : Math.round(n * 10) / 10;
-                      })
-                    : (exercise as any).weightsPerSeries)
-            };
+            return exercise;
           })
         );
 
@@ -87,7 +65,9 @@ export const addClientByTrainer = async (req: Request, res: Response): Promise<v
     trainingDaysPerWeek,
     medicalConditions,
     medications,
-    injuries
+    injuries,
+    membershipTier,
+    nickname
   } = req.body;
 
   if (!req.user) {
@@ -127,35 +107,15 @@ export const addClientByTrainer = async (req: Request, res: Response): Promise<v
         }
       });
 
-      // Enviar correo de bienvenida al cliente existente (sin nueva contraseña)
-      let emailResult: EmailResult = { success: false, timestamp: new Date() };
-      try {
-        emailResult = await EmailService.sendWelcomeEmail({
-          clientName: existingClient.name || name,
-          clientEmail: existingClient.email,
-          temporaryPassword: 'Tu contraseña actual (sin cambios)',
-          trainerName: trainer.name || 'Tu entrenador',
-          loginUrl: process.env.FRONTEND_URL || 'http://localhost:5173/login'
-        });
-        console.log(`✅ Correo de bienvenida enviado a cliente existente: ${existingClient.email}`);
-      } catch (emailError: any) {
-        console.error('Error al enviar correo de bienvenida a cliente existente:', emailError);
-        emailResult = { success: false, error: emailError.message, timestamp: new Date() };
-      }
-
       const { password: _, ...clientData } = existingClient;
       res.status(200).json({ 
-        message: 'Cliente asociado exitosamente a tu cuenta.', 
-        client: clientData,
-        emailSent: emailResult.success,
-        emailError: emailResult.error || null
+        message: 'Cliente asociado exitosamente a tu cuenta', 
+        client: clientData
       });
       return;
     }
 
-    // Generar contraseña temporal si no se proporciona una
-    const temporaryPassword = password || generateSecureTemporaryPassword(12);
-    const hashedPassword = await bcrypt.hash(temporaryPassword, 12);
+    const hashedPassword = await bcrypt.hash(password, 12);
 
     const clientProfileData: Prisma.ClientProfileCreateWithoutUserInput = {
       name,
@@ -166,7 +126,9 @@ export const addClientByTrainer = async (req: Request, res: Response): Promise<v
       trainingDaysPerWeek: trainingDaysPerWeek ? parseInt(trainingDaysPerWeek.toString(), 10) : 3,
       medicalConditions,
       medications,
-      injuries
+      injuries,
+      ...(membershipTier && { membershipTier }),
+      ...(nickname && { nickname })
     };
 
     const newClient = await prisma.user.create({
@@ -204,29 +166,11 @@ export const addClientByTrainer = async (req: Request, res: Response): Promise<v
       }
     });
 
-    // Enviar correo de bienvenida con credenciales
-    let emailResult: EmailResult = { success: false, timestamp: new Date() };
-    try {
-      emailResult = await EmailService.sendWelcomeEmail({
-        clientName: name,
-        clientEmail: email,
-        temporaryPassword: temporaryPassword,
-        trainerName: trainer.name || 'Tu entrenador',
-        loginUrl: process.env.FRONTEND_URL || 'http://localhost:5173/login'
-      });
-      console.log(`✅ Correo de bienvenida enviado exitosamente a: ${email}`);
-    } catch (emailError: any) {
-      console.error('Error al enviar correo de bienvenida:', emailError);
-      emailResult = { success: false, error: emailError.message, timestamp: new Date() };
-    }
-
     const { password: _, ...clientData } = newClient;
     res.status(201).json({ 
-      message: 'Cliente agregado exitosamente.', 
+      message: 'Client added successfully by trainer', 
       client: clientData,
-      routine: initialRoutine,
-      emailSent: emailResult.success,
-      emailError: emailResult.error || null
+      routine: initialRoutine
     });
   } catch (error) {
     console.error('Error adding client by trainer:', error);
@@ -462,7 +406,7 @@ export const getClientRoutines = async (req: Request, res: Response) => {
 
         // Buscar rutinas directas
         const directRoutines = await prisma.routine.findMany({
-          where: { 
+          where: {
             clientId: clientId
           },
           include: {
@@ -473,6 +417,9 @@ export const getClientRoutines = async (req: Request, res: Response) => {
                 email: true,
                 role: true
               }
+            },
+            _count: {
+              select: { progress: true }
             }
           }
         });
@@ -500,6 +447,9 @@ export const getClientRoutines = async (req: Request, res: Response) => {
                     email: true,
                     role: true
                   }
+                },
+                _count: {
+                  select: { progress: true }
                 }
               }
             },

@@ -47,15 +47,7 @@ const enrichRoutineExercises = async (exercises: any[]): Promise<any[]> => {
           type: fullExercise?.type || exercise.type || null,
           equipment: fullExercise?.equipment || exercise.equipment || null,
           difficulty: fullExercise?.difficulty || exercise.difficulty || null,
-          muscles: fullExercise?.muscles || exercise.muscles || null,
-          weightsPerSeries: Array.isArray((exercise as any).weightsPerSeries)
-            ? (exercise as any).weightsPerSeries
-            : (typeof exercise.weight === 'string' && exercise.weight.includes('-')
-                ? exercise.weight.split('-').map((w: string) => {
-                    const n = parseFloat(String(w).replace(',', '.'));
-                    return isNaN(n) ? 0 : Math.round(n * 10) / 10;
-                  })
-                : (exercise as any).weightsPerSeries)
+          muscles: fullExercise?.muscles || exercise.muscles || null
         };
       } catch (error) {
         console.error('Error enriching exercise:', exercise.name, error);
@@ -100,42 +92,44 @@ export const getProfile = async (req: Request, res: Response): Promise<void> => 
 // ✅ Crear o actualizar perfil del cliente
 export const createOrUpdateProfile = async (req: Request, res: Response): Promise<void> => {
   try {
-    const { name, phone, goals, weight, medicalConditions, medications, injuries } = req.body;
-    
+    const { name, phone, goals, weight, medicalConditions, medications, injuries, initialObjective, trainingDaysPerWeek } = req.body;
+
     if (!req.user?.id) {
       res.status(401).json({ success: false, message: 'Usuario no autenticado' });
       return;
     }
 
-    if (!name) {
-      res.status(400).json({ success: false, message: 'El nombre es obligatorio' });
-      return;
-    }
-
-    console.log('🧾 Datos recibidos para guardar perfil:', {
-      name, phone, goals, weight, medicalConditions, medications, injuries
+    // Obtener el perfil existente para usar el nombre guardado si no viene en el body
+    const existingProfile = await prisma.clientProfile.findUnique({
+      where: { userId: req.user.id }
     });
+
+    const profileName = name || existingProfile?.name || req.user?.name || 'Sin nombre';
 
     const updatedProfile = await prisma.clientProfile.upsert({
       where: { userId: req.user.id },
       update: {
-        name,
-        phone,
-        goals,
-        weight: weight ? parseFloat(weight.toString()) : null,
-        medicalConditions,
-        medications,
-        injuries
+        name: profileName,
+        ...(phone !== undefined && { phone }),
+        ...(goals !== undefined && { goals }),
+        ...(weight !== undefined && { weight: weight ? parseFloat(weight.toString()) : null }),
+        ...(medicalConditions !== undefined && { medicalConditions }),
+        ...(medications !== undefined && { medications }),
+        ...(injuries !== undefined && { injuries }),
+        ...(initialObjective !== undefined && { initialObjective }),
+        ...(trainingDaysPerWeek !== undefined && { trainingDaysPerWeek: parseInt(trainingDaysPerWeek.toString()) }),
       },
       create: {
         userId: req.user.id,
-        name,
+        name: profileName,
         phone,
-        goals,
+        goals: goals || [],
         weight: weight ? parseFloat(weight.toString()) : null,
         medicalConditions,
         medications,
-        injuries
+        injuries,
+        initialObjective: initialObjective || 'Sin definir',
+        trainingDaysPerWeek: trainingDaysPerWeek ? parseInt(trainingDaysPerWeek.toString()) : 3,
       }
     });
 
@@ -182,9 +176,6 @@ export const getAssignedRoutines = async (req: Request, res: Response): Promise<
             email: true
           }
         }
-      },
-      orderBy: {
-        createdAt: 'desc'
       }
     });
 
@@ -208,9 +199,6 @@ export const getAssignedRoutines = async (req: Request, res: Response): Promise<
             }
           }
         }
-      },
-      orderBy: {
-        assignedDate: 'desc'
       }
     });
 
@@ -224,13 +212,6 @@ export const getAssignedRoutines = async (req: Request, res: Response): Promise<
     const uniqueRoutines = allRoutines.filter((routine, index, self) => 
       index === self.findIndex(r => r.id === routine.id)
     );
-
-    // Ordenar las rutinas por fecha de creación descendente (más recientes primero)
-    uniqueRoutines.sort((a, b) => {
-      const dateA = new Date(a.createdAt);
-      const dateB = new Date(b.createdAt);
-      return dateB.getTime() - dateA.getTime();
-    });
 
     // Enriquecer ejercicios con datos completos
     const enrichedRoutines = await Promise.all(
