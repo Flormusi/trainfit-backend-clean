@@ -4,7 +4,7 @@
   "description": "Backend for TrainFit application",
   "main": "dist/server.js",
   "scripts": {
-    "start": "node dist/server.js",
+    "start": "node dist/src/server.js",
     "dev": "nodemon --ext ts,json --exec npx ts-node --project tsconfig.json src/server.ts",
     "build": "tsc || true",
     "test": "jest"
