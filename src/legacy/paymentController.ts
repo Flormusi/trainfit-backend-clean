@@ -245,7 +245,7 @@ export const updateClientPayment = async (req: AuthenticatedRequest, res: Respon
       trainerId: user.id,
       clientId: clientId,
       amount: parseFloat(amount),
-      planType: planType,
+      planType: planType || 'mensual',
       status: status || 'paid',
       description: `Plan ${planType || 'mensual'} - Cliente ${clientId}`,
       externalReference: `manual-${user.id}-${clientId}-${Date.now()}`,

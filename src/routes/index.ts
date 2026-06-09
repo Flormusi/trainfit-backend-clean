@@ -12,6 +12,7 @@ import messageRoutes from './messageRoutes';
 import appointmentRoutes from './appointmentRoutes';
 import reminderRoutes from './reminderRoutes';
 import paymentRoutes from './payment.routes';
+import clientPaymentRoutes from './paymentRoutes';
 import paymentReminderRoutes from './paymentReminderRoutes';
 import webhookRoutes from './webhook.routes';
 
@@ -35,6 +36,7 @@ router.use('/messages', messageRoutes);
 router.use('/appointments', appointmentRoutes);
 router.use('/reminders', reminderRoutes);
 router.use('/payments', paymentRoutes);
+router.use('/payments', clientPaymentRoutes);
 router.use('/payment-reminders', paymentReminderRoutes);
 router.use('/webhooks', webhookRoutes);
 
