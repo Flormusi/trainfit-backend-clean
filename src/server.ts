@@ -34,7 +34,8 @@ async function runMigrations() {
   try {
     await prisma.$executeRaw`ALTER TABLE "ClientProfile" ADD COLUMN IF NOT EXISTS "membershipTier" TEXT`;
     await prisma.$executeRaw`ALTER TABLE "ClientProfile" ADD COLUMN IF NOT EXISTS "nickname" TEXT`;
-    console.log('✅ Migrations OK (membershipTier, nickname)');
+    await prisma.$executeRaw`ALTER TABLE "PaymentPreference" ADD COLUMN IF NOT EXISTS "dueDate" TIMESTAMP`;
+    console.log('✅ Migrations OK (membershipTier, nickname, dueDate)');
   } catch (e: any) {
     console.log('⚠️ Migration warning:', e.message);
   }

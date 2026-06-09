@@ -246,9 +246,10 @@ export const updateClientPayment = async (req: AuthenticatedRequest, res: Respon
       clientId: clientId,
       amount: parseFloat(amount),
       planType: planType,
-      status: status || 'pending',
-      description: `Plan ${planType} - Cliente ${clientId}`,
-      externalReference: `manual-${user.id}-${clientId}-${Date.now()}`
+      status: status || 'paid',
+      description: `Plan ${planType || 'mensual'} - Cliente ${clientId}`,
+      externalReference: `manual-${user.id}-${clientId}-${Date.now()}`,
+      ...(dueDate && { dueDate: new Date(dueDate) })
     };
 
     const updatedPayment = await prisma.paymentPreference.create({

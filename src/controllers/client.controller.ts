@@ -529,17 +529,38 @@ export const getPaymentStatus = async (req: Request, res: Response): Promise<voi
   const user = req.user;
 
   try {
-    // Por ahora devolvemos datos simulados
-    // En una implementación real, esto se conectaría con un sistema de pagos
-    const paymentStatus = {
-      isUpToDate: Math.random() > 0.3, // 70% probabilidad de estar al día
-      lastPaymentDate: new Date(Date.now() - Math.floor(Math.random() * 30) * 24 * 60 * 60 * 1000),
-      nextPaymentDue: new Date(Date.now() + Math.floor(Math.random() * 30) * 24 * 60 * 60 * 1000),
-      amount: 50.00,
-      currency: 'USD'
-    };
+    // Leer el último pago real desde la DB
+    const lastPayment = await prisma.paymentPreference.findFirst({
+      where: { clientId: user.id },
+      orderBy: { createdAt: 'desc' }
+    });
 
-    res.status(200).json({ success: true, paymentStatus });
+    if (!lastPayment) {
+      res.status(200).json({
+        success: true,
+        paymentStatus: {
+          isUpToDate: false,
+          amount: 0,
+          dueDate: null,
+          status: 'pending'
+        }
+      });
+      return;
+    }
+
+    const dueDate = (lastPayment as any).dueDate || lastPayment.createdAt;
+    const isUpToDate = lastPayment.status === 'paid' || lastPayment.status === 'approved';
+
+    res.status(200).json({
+      success: true,
+      paymentStatus: {
+        isUpToDate,
+        amount: lastPayment.amount,
+        dueDate: dueDate instanceof Date ? dueDate.toISOString() : dueDate,
+        status: lastPayment.status,
+        lastPaymentDate: lastPayment.updatedAt
+      }
+    });
   } catch (error) {
     console.error('Error fetching payment status:', error);
     res.status(500).json({ message: 'Internal server error' });

@@ -429,6 +429,7 @@ model PaymentPreference {
   planType          String
   status            String   @default("pending")
   externalReference String?
+  dueDate           DateTime?
   createdAt         DateTime @default(now())
   updatedAt         DateTime @updatedAt
   trainer           User     @relation("TrainerPayments", fields: [trainerId], references: [id])
