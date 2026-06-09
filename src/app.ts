@@ -10,50 +10,7 @@ import { errorHandler, notFound } from './utils/responseHandler';
 const app = express();
 
 app.use(cors({
-  origin: (origin, callback) => {
-    // Permitir solicitudes sin origin (aplicaciones móviles, Postman, etc.)
-    if (!origin) return callback(null, true);
-    
-    // Lista de orígenes permitidos por defecto (desarrollo local)
-    const defaultAllowedOrigins = [
-      'http://localhost:5173',
-      'http://127.0.0.1:5173',
-      'http://localhost:5174',
-      'http://127.0.0.1:5174'
-    ];
-
-    // Orígenes adicionales desde variables de entorno (separados por coma)
-    const envAllowedOrigins = (process.env.ALLOWED_ORIGINS || '')
-      .split(',')
-      .map(o => o.trim())
-      .filter(Boolean);
-
-    const allowedOrigins = [...defaultAllowedOrigins, ...envAllowedOrigins];
-    
-    // Permitir cualquier IP de red local en puerto 5173 o 5174
-    const localNetworkRegex = /^http:\/\/192\.168\.[0-9]{1,3}\.[0-9]{1,3}:(5173|5174)$/;
-    // Permitir dominios de Netlify (incluye sites y previews)
-    const netlifyRegex = /^https?:\/\/([a-z0-9-]+\.)?netlify\.app$/i;
-    // Permitir dominios de ngrok
-    const ngrokRegex = /^https?:\/\/[a-z0-9-]+\.ngrok\.io$/i;
-    // Permitir dominios de Vercel (deployments y previews)
-const vercelRegex = /^https?:\/\/.*\.vercel\.app$/i;
-
-
-    if (
-  allowedOrigins.includes(origin) ||
-  localNetworkRegex.test(origin) ||
-  netlifyRegex.test(origin) ||
-  ngrokRegex.test(origin) ||
-  vercelRegex.test(origin)
-) {
-
-      callback(null, true);
-    } else {
-      console.log(`CORS bloqueado para origen: ${origin}`);
-      callback(new Error('No permitido por CORS'));
-    }
-  },
+  origin: ['http://localhost:5173', 'http://127.0.0.1:5173', 'http://localhost:5174', 'http://127.0.0.1:5174'],
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH'],
   allowedHeaders: [
@@ -92,6 +49,11 @@ app.use((req, res, next) => {
 // Ruta raíz
 app.get('/', (req, res) => {
   res.json({ message: 'Bienvenido a la API de Trainfit' });
+});
+
+// Health check para keep-alive (Render free tier)
+app.get('/api/health', (req, res) => {
+  res.json({ status: 'ok' });
 });
 
 // Rutas
