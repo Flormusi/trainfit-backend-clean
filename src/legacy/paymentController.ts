@@ -241,13 +241,20 @@ export const updateClientPayment = async (req: AuthenticatedRequest, res: Respon
     }
 
     // Crear o actualizar información de pago
+    // Obtener nombre del cliente para la descripción
+    const clientUser = await prisma.user.findUnique({
+      where: { id: clientId },
+      select: { name: true }
+    });
+    const clientName = clientUser?.name || clientId;
+
     const paymentData = {
       trainerId: user.id,
       clientId: clientId,
       amount: parseFloat(amount),
       planType: planType || 'mensual',
       status: status || 'paid',
-      description: `Plan ${planType || 'mensual'} - Cliente ${clientId}`,
+      description: `Cuota mensual - ${clientName}`,
       externalReference: `manual-${user.id}-${clientId}-${Date.now()}`,
       ...(dueDate && { dueDate: new Date(dueDate) })
     };
