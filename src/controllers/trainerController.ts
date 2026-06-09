@@ -1063,15 +1063,19 @@ export const createClientRoutine = async (req: Request, res: Response): Promise<
       }
     });
     
-    // Enviar notificación por email al cliente
-    await EmailService.sendRoutineAssignmentEmail({
-      clientName: trainerClientRelation.client.name || 'Cliente',
-      clientEmail: trainerClientRelation.client.email,
-      routineName: name,
-      trainerName: user.name !== null ? user.name : 'Tu entrenador',
-      dashboardUrl: `${process.env.FRONTEND_URL || 'http://localhost:5173'}/client/dashboard`,
-      routineUrl: `${process.env.FRONTEND_URL || 'http://localhost:5173'}/client/${clientId}/routine/${routine.id}`
-    });
+    // Enviar notificación por email al cliente (no bloquea si falla)
+    try {
+      await EmailService.sendRoutineAssignmentEmail({
+        clientName: trainerClientRelation.client.name || 'Cliente',
+        clientEmail: trainerClientRelation.client.email,
+        routineName: name,
+        trainerName: user.name !== null ? user.name : 'Tu entrenador',
+        dashboardUrl: `${process.env.FRONTEND_URL || 'http://localhost:5173'}/client/dashboard`,
+        routineUrl: `${process.env.FRONTEND_URL || 'http://localhost:5173'}/client/${clientId}/routine/${routine.id}`
+      });
+    } catch (emailError) {
+      console.warn('⚠️ Email no enviado (configuración pendiente):', emailError);
+    }
     
     res.status(201).json({
       status: 'success',
@@ -1191,17 +1195,21 @@ export const assignRoutineToClient = async (req: Request, res: Response): Promis
       routineId
     );
 
-    // Enviar notificación por email al cliente
-    await EmailService.sendRoutineAssignmentEmail({
-      clientName: trainerClientRelation.client.name || 'Cliente',
-      clientEmail: trainerClientRelation.client.email,
-      routineName: routine.name,
-      trainerName: user.name !== null ? user.name : 'Tu entrenador',
-      dashboardUrl: `${process.env.FRONTEND_URL || 'http://localhost:5173'}/client/dashboard`,
-      routineUrl: `${process.env.FRONTEND_URL || 'http://localhost:5173'}/client/${clientId}/routine/${routineId}`,
-      startDate,
-      endDate
-    });
+    // Enviar notificación por email al cliente (no bloquea si falla)
+    try {
+      await EmailService.sendRoutineAssignmentEmail({
+        clientName: trainerClientRelation.client.name || 'Cliente',
+        clientEmail: trainerClientRelation.client.email,
+        routineName: routine.name,
+        trainerName: user.name !== null ? user.name : 'Tu entrenador',
+        dashboardUrl: `${process.env.FRONTEND_URL || 'http://localhost:5173'}/client/dashboard`,
+        routineUrl: `${process.env.FRONTEND_URL || 'http://localhost:5173'}/client/${clientId}/routine/${routineId}`,
+        startDate,
+        endDate
+      });
+    } catch (emailError) {
+      console.warn('⚠️ Email no enviado (configuración pendiente):', emailError);
+    }
 
     res.status(201).json({
       status: 'success',
@@ -1709,17 +1717,21 @@ export const resendRoutineEmail = async (req: Request, res: Response): Promise<v
     const startDate = finalRoutineAssignment?.startDate?.toISOString() || new Date().toISOString();
     const endDate = finalRoutineAssignment?.endDate?.toISOString() || new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(); // 30 días desde hoy
 
-    // Reenviar email de notificación al cliente
-    await EmailService.sendRoutineAssignmentEmail({
-      clientName: trainerClientRelation.client.name || 'Cliente',
-      clientEmail: trainerClientRelation.client.email,
-      routineName: routine.name,
-      trainerName: user.name !== null ? user.name : 'Tu entrenador',
-      dashboardUrl: `${process.env.FRONTEND_URL || 'http://localhost:5173'}/client/dashboard`,
-      routineUrl: `${process.env.FRONTEND_URL || 'http://localhost:5173'}/client/${clientId}/routine/${routineId}`,
-      startDate,
-      endDate
-    });
+    // Reenviar email de notificación al cliente (no bloquea si falla)
+    try {
+      await EmailService.sendRoutineAssignmentEmail({
+        clientName: trainerClientRelation.client.name || 'Cliente',
+        clientEmail: trainerClientRelation.client.email,
+        routineName: routine.name,
+        trainerName: user.name !== null ? user.name : 'Tu entrenador',
+        dashboardUrl: `${process.env.FRONTEND_URL || 'http://localhost:5173'}/client/dashboard`,
+        routineUrl: `${process.env.FRONTEND_URL || 'http://localhost:5173'}/client/${clientId}/routine/${routineId}`,
+        startDate,
+        endDate
+      });
+    } catch (emailError) {
+      console.warn('⚠️ Email de reenvío no enviado (configuración pendiente):', emailError);
+    }
 
     // Crear notificación de reenvío exitoso
     await prisma.notification.create({
