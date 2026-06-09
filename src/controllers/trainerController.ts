@@ -92,12 +92,20 @@ export const updateClientInfo = async (req: Request, res: Response): Promise<voi
     }
 
     const { clientId } = req.params;
-    const { phone, weight, height, age, gender, fitnessLevel, goals, initialObjective, trainingDaysPerWeek, medicalConditions, medications, injuries, membershipTier, nickname } = req.body;
+    const { name, email, phone, weight, height, age, gender, fitnessLevel, goals, initialObjective, trainingDaysPerWeek, medicalConditions, medications, injuries, membershipTier, nickname } = req.body;
 
     console.log('=== updateClientInfo called ===');
     console.log('Trainer ID:', user.id);
     console.log('Client ID:', clientId);
-    console.log('Update data:', { phone, weight, height, age, gender, fitnessLevel, goals, initialObjective, trainingDaysPerWeek, medicalConditions, medications, injuries });
+    console.log('Update data:', { name, email, phone, weight, height, age, gender, fitnessLevel, goals, initialObjective, trainingDaysPerWeek, medicalConditions, medications, injuries });
+
+    // Actualizar nombre y email en User si se proporcionaron
+    if (name || email) {
+      const userUpdateData: any = {};
+      if (name) userUpdateData.name = name.trim();
+      if (email) userUpdateData.email = email.trim().toLowerCase();
+      await prisma.user.update({ where: { id: clientId }, data: userUpdateData });
+    }
 
     // Verificar que el cliente está asociado al entrenador
     const trainerClientRelation = await prisma.trainerClient.findFirst({
