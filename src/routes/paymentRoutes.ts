@@ -3,7 +3,8 @@ import {
   createPaymentPreference,
   handlePaymentWebhook,
   getClientPaymentStatus,
-  updateClientPayment
+  updateClientPayment,
+  getMyPaymentHistory
 } from '../legacy/paymentController';
 import { authenticateToken } from '../middleware/authenticateToken';
 
@@ -20,5 +21,8 @@ router.get('/client/:clientId/status', authenticateToken, getClientPaymentStatus
 
 // Actualizar pago del cliente
 router.put('/client/:clientId', authenticateToken, updateClientPayment);
+
+// Historial de pagos del cliente autenticado
+router.get('/my-history', authenticateToken, getMyPaymentHistory);
 
 export default router;
