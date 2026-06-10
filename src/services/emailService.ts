@@ -1,9 +1,4 @@
 import nodemailer from 'nodemailer';
-import { generateWelcomeEmailTemplate, WelcomeEmailData } from '../templates/welcomeEmailTemplate';
-import { generatePaymentReminderEmailTemplate, PaymentReminderEmailData } from '../templates/paymentReminderEmailTemplate';
-import { validateEmailSecurity } from '../middleware/emailValidation.middleware';
-import { icsService } from './icsService';
-import { TrainingEvent } from './calendarService';
 
 export interface EmailData {
   to: string;
@@ -23,39 +18,10 @@ export interface RoutineEmailData {
   endDate?: string;
 }
 
-export interface WelcomeEmailOptions {
-  clientName: string;
-  clientEmail: string;
-  temporaryPassword: string;
-  trainerName: string;
-  loginUrl?: string;
-  supportEmail?: string;
-  supportPhone?: string;
-}
-
-export interface EmailResult {
-  success: boolean;
-  messageId?: string;
-  error?: string;
-  timestamp: Date;
-}
-
-interface EmailLog {
-  to: string;
-  subject: string;
-  success: boolean;
-  error?: string;
-  timestamp: Date;
-  attemptCount: number;
-}
-
 type EmailServiceType = 'gmail' | 'sendgrid' | 'mailgun' | 'simulation';
 
 export class EmailService {
   private static transporter: nodemailer.Transporter | null = null;
-  private static emailLogs: EmailLog[] = [];
-  private static readonly MAX_RETRY_ATTEMPTS = 3;
-  private static readonly RETRY_DELAY_MS = 2000;
 
   /**
    * Determina qué servicio de email usar basado en las variables de entorno
@@ -86,7 +52,10 @@ export class EmailService {
           auth: {
             user: process.env.EMAIL_USER,
             pass: process.env.EMAIL_PASS
-          }
+          },
+          connectionTimeout: 10000,
+          greetingTimeout: 10000,
+          socketTimeout: 10000
         });
       
       case 'sendgrid':
@@ -126,13 +95,13 @@ export class EmailService {
   /**
    * Método genérico para enviar correos electrónicos
    */
-  static async sendEmail(emailData: EmailData): Promise<{ messageId?: string; success: boolean }> {
+  static async sendEmail(emailData: EmailData): Promise<boolean> {
     try {
       // Si no hay credenciales configuradas, simular envío exitoso
       if (!this.isEmailConfigured()) {
         console.log(`[SIMULADO] Email que se enviaría a ${emailData.to}: ${emailData.subject}`);
         console.log(`[SIMULADO] Contenido: ${emailData.html.substring(0, 100)}...`);
-        return { success: true, messageId: 'simulated-' + Date.now() };
+        return true;
       }
 
       // Inicializar transporter si no existe
@@ -143,10 +112,10 @@ export class EmailService {
       // Si aún no hay transporter, simular envío
       if (!this.transporter) {
         console.log(`[FALLBACK] No se pudo inicializar transporter, simulando envío para ${emailData.to}`);
-        return { success: true, messageId: 'fallback-' + Date.now() };
+        return true;
       }
 
-      const result = await this.transporter.sendMail({
+      await this.transporter.sendMail({
         from: emailData.from || process.env.EMAIL_FROM || 'noreply@trainfit.com',
         to: emailData.to,
         subject: emailData.subject,
@@ -154,12 +123,12 @@ export class EmailService {
       });
       
       console.log(`✅ Email enviado exitosamente a ${emailData.to}`);
-      return { success: true, messageId: result.messageId };
+      return true;
     } catch (error) {
       console.error('Error al enviar email:', error);
       // En caso de error, simular envío exitoso para no bloquear la funcionalidad
       console.log(`[FALLBACK] Simulando envío exitoso para ${emailData.to}`);
-      return { success: true, messageId: 'error-fallback-' + Date.now() };
+      return true;
     }
   }
 
@@ -323,301 +292,30 @@ export class EmailService {
       </html>
     `;
 
-    const result = await this.sendEmail({
+    return this.sendEmail({
       to: data.clientEmail,
       subject: '🎉 ¡Nueva Rutina Asignada! - TrainFit',
       html: emailContent
     });
-
-    return result.success;
   }
 
   /**
    * Envía un recordatorio de pago al cliente
    */
   static async sendPaymentReminderEmail(clientEmail: string, clientName: string, trainerName: string): Promise<boolean> {
-    const emailData: PaymentReminderEmailData = {
-      clientName,
-      clientEmail,
-      trainerName,
-      supportEmail: 'soporte@trainfit.com',
-      supportPhone: '+54 11 1234-5678'
-    };
+    const emailContent = `
+      <h2>Recordatorio de Pago - TrainFit</h2>
+      <p>Hola ${clientName},</p>
+      <p>Este es un recordatorio amistoso de que tienes un pago pendiente para tu entrenador ${trainerName}.</p>
+      <p>Por favor, realiza el pago lo antes posible para continuar disfrutando de todos los beneficios de tu membresía.</p>
+      <p>Si ya has realizado el pago, por favor ignora este mensaje.</p>
+      <p>Saludos,<br>El equipo de TrainFit</p>
+    `;
 
-    const emailContent = generatePaymentReminderEmailTemplate(emailData);
-
-    const result = await this.sendEmail({
+    return this.sendEmail({
       to: clientEmail,
-      subject: 'Recordatorio de Pago - TrainFit 💳',
+      subject: 'Recordatorio de Pago - TrainFit',
       html: emailContent
     });
-
-    return result.success;
-  }
-
-  /**
-   * Registra un intento de envío de email
-   */
-  private static logEmailAttempt(log: EmailLog): void {
-    this.emailLogs.push(log);
-    
-    // Mantener solo los últimos 1000 logs para evitar uso excesivo de memoria
-    if (this.emailLogs.length > 1000) {
-      this.emailLogs = this.emailLogs.slice(-1000);
-    }
-    
-    // Log en consola para debugging
-    if (log.success) {
-      console.log(`✅ Email enviado exitosamente a ${log.to} - Intento ${log.attemptCount}`);
-    } else {
-      console.error(`❌ Error enviando email a ${log.to} - Intento ${log.attemptCount}: ${log.error}`);
-    }
-  }
-
-  /**
-   * Obtiene los logs de emails (para debugging/monitoreo)
-   */
-  static getEmailLogs(limit: number = 100): EmailLog[] {
-    return this.emailLogs.slice(-limit);
-  }
-
-  /**
-   * Envía un email con reintentos automáticos
-   */
-  private static async sendEmailWithRetry(
-    mailOptions: any, 
-    maxAttempts: number = this.MAX_RETRY_ATTEMPTS
-  ): Promise<EmailResult> {
-    let lastError: any;
-    
-    for (let attempt = 1; attempt <= maxAttempts; attempt++) {
-      try {
-        const result = await this.sendEmail(mailOptions);
-        
-        // Log exitoso
-        this.logEmailAttempt({
-          to: mailOptions.to,
-          subject: mailOptions.subject,
-          success: true,
-          timestamp: new Date(),
-          attemptCount: attempt
-        });
-        
-        return {
-          success: true,
-          messageId: result.messageId,
-          timestamp: new Date()
-        };
-      } catch (error) {
-        lastError = error;
-        
-        // Log del intento fallido
-        this.logEmailAttempt({
-          to: mailOptions.to,
-          subject: mailOptions.subject,
-          success: false,
-          error: error instanceof Error ? error.message : String(error),
-          timestamp: new Date(),
-          attemptCount: attempt
-        });
-        
-        // Si no es el último intento, esperar antes del siguiente
-        if (attempt < maxAttempts) {
-          await new Promise(resolve => setTimeout(resolve, this.RETRY_DELAY_MS * attempt));
-        }
-      }
-    }
-    
-    return {
-      success: false,
-      error: lastError instanceof Error ? lastError.message : String(lastError),
-      timestamp: new Date()
-    };
-  }
-
-  /**
-   * Envía un correo electrónico de bienvenida a un nuevo cliente
-   */
-  static async sendWelcomeEmail(options: WelcomeEmailOptions): Promise<EmailResult> {
-    try {
-      // Validar seguridad del email
-      const emailValidation = validateEmailSecurity(options.clientEmail);
-      if (!emailValidation.isValid) {
-        const error = `Email no válido: ${emailValidation.reason}`;
-        console.error(error);
-        return {
-          success: false,
-          error,
-          timestamp: new Date()
-        };
-      }
-
-      // Sanitizar datos de entrada
-      const sanitizedOptions = {
-        ...options,
-        clientName: options.clientName.trim().substring(0, 100),
-        trainerName: options.trainerName.trim().substring(0, 100)
-      };
-
-      const emailData: WelcomeEmailData = {
-        clientName: sanitizedOptions.clientName,
-        clientEmail: sanitizedOptions.clientEmail,
-        temporaryPassword: sanitizedOptions.temporaryPassword,
-        trainerName: sanitizedOptions.trainerName,
-        loginUrl: sanitizedOptions.loginUrl || 'https://trainfit.app/login',
-        supportEmail: sanitizedOptions.supportEmail || 'soporte@trainfit.app',
-        supportPhone: sanitizedOptions.supportPhone || '+1 (555) 123-4567'
-      };
-
-      const htmlContent = generateWelcomeEmailTemplate(emailData);
-
-      const mailOptions = {
-        from: process.env.EMAIL_FROM || 'noreply@trainfit.app',
-        to: sanitizedOptions.clientEmail,
-        subject: '¡Bienvenido a TrainFit! - Tus credenciales de acceso',
-        html: htmlContent,
-        // Configuraciones adicionales de seguridad
-        headers: {
-          'X-Priority': '1',
-          'X-MSMail-Priority': 'High',
-          'Importance': 'high'
-        }
-      };
-
-      return await this.sendEmailWithRetry(mailOptions);
-    } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : String(error);
-      console.error('Error crítico al enviar correo de bienvenida:', errorMessage);
-      
-      return {
-        success: false,
-        error: errorMessage,
-        timestamp: new Date()
-      };
-    }
-  }
-
-  /**
-   * Envía una invitación de calendario con archivo .ics adjunto
-   */
-  static async sendCalendarInvitation(event: TrainingEvent, customMessage?: string): Promise<EmailResult> {
-    try {
-      if (!this.isEmailConfigured()) {
-        console.warn('⚠️ Email no configurado, simulando envío de invitación de calendario');
-        return {
-          success: true,
-          messageId: `sim-calendar-${Date.now()}`,
-          timestamp: new Date()
-        };
-      }
-
-      const icsContent = await icsService.generateICSFile(event);
-      const fileName = icsService.generateFileName(event);
-
-      const mailOptions = {
-        from: {
-          name: 'TrainFit',
-          address: process.env.EMAIL_USER || 'noreply@trainfit.com'
-        },
-        to: event.clientEmail,
-        subject: `📅 Invitación: ${event.title}`,
-        html: this.generateCalendarInvitationHTML(event, customMessage),
-        attachments: [
-          {
-            filename: fileName,
-            content: icsContent,
-            contentType: 'text/calendar; charset=utf-8; method=REQUEST'
-          }
-        ]
-      };
-
-      const result = await this.sendEmailWithRetry(mailOptions);
-      
-      if (result.success) {
-        console.log(`📧 Invitación de calendario enviada a ${event.clientEmail} para el evento: ${event.title}`);
-      }
-      
-      return result;
-    } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : String(error);
-      console.error('❌ Error enviando invitación de calendario:', errorMessage);
-      
-      return {
-        success: false,
-        error: errorMessage,
-        timestamp: new Date()
-      };
-    }
-  }
-
-  /**
-   * Genera el HTML para la invitación de calendario
-   */
-  private static generateCalendarInvitationHTML(event: TrainingEvent, customMessage?: string): string {
-    return `
-      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-        <div style="background: linear-gradient(135deg, #FF4C4C, #FF6B6B); padding: 30px; text-align: center; border-radius: 10px 10px 0 0;">
-          <h1 style="color: white; margin: 0; font-size: 28px;">🏋️‍♂️ TrainFit</h1>
-          <p style="color: white; margin: 10px 0 0 0; font-size: 16px;">Tu sesión de entrenamiento te espera</p>
-        </div>
-        
-        <div style="background: #f8f9fa; padding: 30px; border-radius: 0 0 10px 10px;">
-          <h2 style="color: #333; margin-top: 0;">📅 ${event.title}</h2>
-          
-          ${customMessage ? `
-            <div style="background: #e8f5e8; padding: 15px; border-radius: 8px; margin: 20px 0; border-left: 4px solid #4CAF50;">
-              <p style="margin: 0; color: #2e7d32; font-style: italic;">${customMessage}</p>
-            </div>
-          ` : ''}
-          
-          <div style="background: white; padding: 20px; border-radius: 8px; margin: 20px 0; border-left: 4px solid #FF4C4C;">
-            <p style="margin: 0 0 10px 0;"><strong>📅 Fecha:</strong> ${event.startDate.toLocaleDateString('es-ES', { 
-              weekday: 'long', 
-              year: 'numeric', 
-              month: 'long', 
-              day: 'numeric' 
-            })}</p>
-            <p style="margin: 0 0 10px 0;"><strong>🕐 Hora:</strong> ${event.startDate.toLocaleTimeString('es-ES', { 
-              hour: '2-digit', 
-              minute: '2-digit' 
-            })} - ${event.endDate.toLocaleTimeString('es-ES', { 
-              hour: '2-digit', 
-              minute: '2-digit' 
-            })}</p>
-            <p style="margin: 0 0 10px 0;"><strong>📍 Ubicación:</strong> ${event.location || 'TrainFit - Gimnasio'}</p>
-            <p style="margin: 0;"><strong>💪 Tipo:</strong> ${event.type.charAt(0).toUpperCase() + event.type.slice(1)}</p>
-          </div>
-          
-          ${event.description ? `
-            <div style="background: white; padding: 20px; border-radius: 8px; margin: 20px 0;">
-              <h3 style="color: #333; margin-top: 0;">📝 Detalles adicionales:</h3>
-              <p style="color: #666; line-height: 1.6; margin: 0;">${event.description}</p>
-            </div>
-          ` : ''}
-          
-          <div style="text-align: center; margin: 30px 0;">
-            <p style="color: #666; margin-bottom: 15px;">
-              📎 <strong>Archivo adjunto:</strong> Haz clic en el archivo .ics adjunto para añadir este evento a tu calendario personal.
-            </p>
-            <p style="color: #888; font-size: 14px;">
-              Compatible con Google Calendar, Outlook, Apple Calendar y más.
-            </p>
-          </div>
-          
-          <div style="background: #e3f2fd; padding: 20px; border-radius: 8px; text-align: center;">
-            <p style="color: #1976d2; margin: 0; font-weight: 500;">
-              🔔 <strong>Recordatorio:</strong> Recibirás notificaciones 30 y 10 minutos antes de tu sesión.
-            </p>
-          </div>
-          
-          <div style="text-align: center; margin-top: 30px; padding-top: 20px; border-top: 1px solid #ddd;">
-            <p style="color: #888; font-size: 14px; margin: 0;">
-              ¿Necesitas reprogramar o cancelar? Contacta con tu entrenador.<br>
-              <strong>TrainFit</strong> - Tu compañero de entrenamiento
-            </p>
-          </div>
-        </div>
-      </div>
-    `;
   }
 }

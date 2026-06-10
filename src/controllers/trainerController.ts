@@ -1717,20 +1717,24 @@ export const resendRoutineEmail = async (req: Request, res: Response): Promise<v
     const startDate = finalRoutineAssignment?.startDate?.toISOString() || new Date().toISOString();
     const endDate = finalRoutineAssignment?.endDate?.toISOString() || new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(); // 30 días desde hoy
 
-    // Reenviar email de notificación al cliente (no bloquea si falla)
+    // Reenviar email de notificación al cliente (timeout de 15s para no bloquear)
     try {
-      await EmailService.sendRoutineAssignmentEmail({
-        clientName: trainerClientRelation.client.name || 'Cliente',
-        clientEmail: trainerClientRelation.client.email,
-        routineName: routine.name,
-        trainerName: user.name !== null ? user.name : 'Tu entrenador',
-        dashboardUrl: `${process.env.FRONTEND_URL || 'http://localhost:5173'}/client/dashboard`,
-        routineUrl: `${process.env.FRONTEND_URL || 'http://localhost:5173'}/client/${clientId}/routine/${routineId}`,
-        startDate,
-        endDate
-      });
+      await Promise.race([
+        EmailService.sendRoutineAssignmentEmail({
+          clientName: trainerClientRelation.client.name || 'Cliente',
+          clientEmail: trainerClientRelation.client.email,
+          routineName: routine.name,
+          trainerName: user.name !== null ? user.name : 'Tu entrenador',
+          dashboardUrl: `${process.env.FRONTEND_URL || 'http://localhost:5173'}/client/dashboard`,
+          routineUrl: `${process.env.FRONTEND_URL || 'http://localhost:5173'}/client/${clientId}/routine/${routineId}`,
+          startDate,
+          endDate
+        }),
+        new Promise((_, reject) => setTimeout(() => reject(new Error('Email timeout')), 15000))
+      ]);
+      console.log('✅ Email enviado correctamente');
     } catch (emailError) {
-      console.warn('⚠️ Email de reenvío no enviado (configuración pendiente):', emailError);
+      console.warn('⚠️ Email no enviado:', emailError);
     }
 
     // Crear notificación de reenvío exitoso
