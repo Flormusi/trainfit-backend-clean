@@ -562,9 +562,10 @@ export const updateRoutine = async (req: Request, res: Response): Promise<void> 
     }
 
     const { id } = req.params;
+    const { name, clientId, duration, notes, exercises } = req.body;
     const routine = await prisma.routine.update({
       where: { id, trainerId: user.id },
-      data: req.body,
+      data: { name, clientId, duration, notes, exercises },
       include: { client: true }
     });
 
