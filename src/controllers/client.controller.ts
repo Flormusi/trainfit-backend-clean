@@ -17,7 +17,7 @@ const enrichRoutineExercises = async (routines: any[]) => {
             // Try to find the exercise in the Exercise table by name
             const exerciseData = await prisma.exercise.findFirst({
               where: {
-                name: exercise.name || exercise.exerciseId
+                name: { equals: exercise.name || exercise.exerciseId, mode: 'insensitive' }
               }
             });
 
