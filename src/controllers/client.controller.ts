@@ -4,6 +4,7 @@ import { PrismaClient, Role, Prisma } from '@prisma/client';
 import { Request, Response } from 'express';
 import { CustomError } from '../types/error';
 import nodemailer from 'nodemailer';
+import crypto from 'crypto';
 
 const prisma = new PrismaClient();
 
@@ -131,6 +132,8 @@ export const addClientByTrainer = async (req: Request, res: Response): Promise<v
       ...(nickname && { nickname })
     };
 
+    const inviteToken = crypto.randomBytes(20).toString('hex');
+
     const newClient = await prisma.user.create({
       data: {
         email,
@@ -138,6 +141,7 @@ export const addClientByTrainer = async (req: Request, res: Response): Promise<v
         name,
         role: Role.CLIENT,
         hasCompletedOnboarding: false,
+        inviteToken,
         clientProfile: {
           create: clientProfileData
         }
@@ -167,10 +171,12 @@ export const addClientByTrainer = async (req: Request, res: Response): Promise<v
     });
 
     const { password: _, ...clientData } = newClient;
-    res.status(201).json({ 
-      message: 'Client added successfully by trainer', 
+    const frontendUrl = process.env.FRONTEND_URL || 'https://trainfit.vercel.app';
+    res.status(201).json({
+      message: 'Client added successfully by trainer',
       client: clientData,
-      routine: initialRoutine
+      routine: initialRoutine,
+      inviteUrl: `${frontendUrl}/join/${inviteToken}`
     });
   } catch (error) {
     console.error('Error adding client by trainer:', error);

@@ -20,6 +20,7 @@ model User {
   resetPasswordExpire         DateTime?
   resetPasswordToken          String?
   hasCompletedOnboarding      Boolean               @default(false)
+  inviteToken                 String?               @unique
   appointmentsAsClient        Appointment[]         @relation("ClientAppointments")
   appointmentsAsTrainer       Appointment[]         @relation("TrainerAppointments")
   clientNotes                 ClientNote[]          @relation("ClientNotesRel")

@@ -1,7 +1,8 @@
 import { Request, Response } from 'express';
 import { PrismaClient, Role, User } from '@prisma/client';
 import bcrypt from 'bcryptjs';
-import jwt, { SignOptions } from 'jsonwebtoken'; // Ensure SignOptions is imported
+import jwt, { SignOptions } from 'jsonwebtoken';
+import crypto from 'crypto';
 
 const prisma = new PrismaClient();
 
@@ -209,5 +210,85 @@ export const login = async (req: Request, res: Response): Promise<void> => {
       message: 'Error en el servidor. Por favor, inténtalo de nuevo más tarde.',
       error: process.env.NODE_ENV === 'development' ? error.message : undefined
     });
+  }
+};
+
+// Generate invite token for a client (called by trainer)
+export const generateInviteToken = async (req: Request, res: Response): Promise<void> => {
+  try {
+    const { clientId } = req.params;
+    const trainer = (req as any).user;
+
+    const relation = await prisma.trainerClient.findFirst({
+      where: { trainerId: trainer.id, clientId }
+    });
+
+    if (!relation) {
+      res.status(404).json({ message: 'Cliente no encontrado' });
+      return;
+    }
+
+    const token = crypto.randomBytes(20).toString('hex');
+
+    await prisma.user.update({
+      where: { id: clientId },
+      data: { inviteToken: token }
+    });
+
+    const inviteUrl = `${process.env.FRONTEND_URL || 'https://trainfit.vercel.app'}/join/${token}`;
+    res.json({ success: true, inviteUrl });
+  } catch (error) {
+    res.status(500).json({ message: 'Error generando el link' });
+  }
+};
+
+// Activate account via invite link (called by client)
+export const activateAccount = async (req: Request, res: Response): Promise<void> => {
+  try {
+    const { token } = req.params;
+    const { password } = req.body;
+
+    const user = await prisma.user.findUnique({ where: { inviteToken: token } });
+
+    if (!user) {
+      res.status(404).json({ message: 'Link inválido o expirado' });
+      return;
+    }
+
+    const hashedPassword = await bcrypt.hash(password, 10);
+
+    await prisma.user.update({
+      where: { id: user.id },
+      data: { password: hashedPassword, inviteToken: null }
+    });
+
+    // Auto-login after activation
+    const jwtSecret = process.env.JWT_SECRET || 'fallback_secret';
+    const jwtOptions: SignOptions = { expiresIn: '7d' };
+    const authToken = jwt.sign({ id: user.id, role: user.role }, jwtSecret, jwtOptions);
+
+    res.json({ success: true, token: authToken, user: { id: user.id, name: user.name, email: user.email, role: user.role } });
+  } catch (error) {
+    res.status(500).json({ message: 'Error activando la cuenta' });
+  }
+};
+
+// Get invite info (name) from token — no auth required
+export const getInviteInfo = async (req: Request, res: Response): Promise<void> => {
+  try {
+    const { token } = req.params;
+    const user = await prisma.user.findUnique({
+      where: { inviteToken: token },
+      select: { name: true, email: true }
+    });
+
+    if (!user) {
+      res.status(404).json({ message: 'Link inválido o expirado' });
+      return;
+    }
+
+    res.json({ success: true, name: user.name, email: user.email });
+  } catch (error) {
+    res.status(500).json({ message: 'Error' });
   }
 };

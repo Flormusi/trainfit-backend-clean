@@ -4,21 +4,19 @@ import { Router } from 'express';
 import {
   register,
   login,
-  // getMe, // Comentado porque no existe en auth.controller.ts
-  // forgotPassword, // Comentado
-  // resetPassword, // Comentado
-  // updateProfile, // Comentado
+  generateInviteToken,
+  activateAccount,
+  getInviteInfo,
 } from '../controllers/auth.controller';
-import { protect } from '../middleware/auth.middleware';
+import { protect, authorize } from '../middleware/auth.middleware';
+import { Role } from '@prisma/client';
 
 const router = Router();
 
-// Rutas de autenticación
 router.post('/register', register);
 router.post('/login', login);
-// router.get('/me', protect, getMe); // Comentado
-// router.post('/forgotpassword', forgotPassword); // Comentado
-// router.put('/resetpassword/:resettoken', resetPassword); // Comentado
-// router.put('/updateprofile', protect, updateProfile); // Comentado
+router.post('/invite/:clientId', protect, authorize([Role.TRAINER]), generateInviteToken);
+router.get('/join/:token', getInviteInfo);
+router.post('/join/:token', activateAccount);
 
 export default router;
