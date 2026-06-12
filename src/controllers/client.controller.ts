@@ -285,29 +285,21 @@ export const deleteClient = async (req: Request, res: Response): Promise<void> =
 
     const client = trainerClientRelation.client;
 
-    // Eliminar todas las rutinas asociadas al cliente
-    await prisma.routine.deleteMany({
-      where: {
-        clientId: client.id,
-        trainerId: trainer.id
-      }
-    });
-
-    // Eliminar la relación trainer-client
-    await prisma.trainerClient.delete({
-      where: {
-        id: trainerClientRelation.id
-      }
-    });
+    // Eliminar todos los registros relacionados antes de borrar el usuario
+    await prisma.notification.deleteMany({ where: { userId: client.id } });
+    await prisma.message.deleteMany({ where: { OR: [{ senderId: client.id }, { receiverId: client.id }] } });
+    await prisma.appointment.deleteMany({ where: { OR: [{ clientId: client.id }, { trainerId: client.id }] } });
+    await prisma.clientNote.deleteMany({ where: { OR: [{ clientId: client.id }, { trainerId: client.id }] } });
+    await prisma.nutritionPlan.deleteMany({ where: { OR: [{ clientId: client.id }, { trainerId: client.id }] } });
+    await prisma.routineAssignment.deleteMany({ where: { OR: [{ clientId: client.id }, { trainerId: client.id }] } });
+    await prisma.progress.deleteMany({ where: { userId: client.id } });
+    await prisma.routine.deleteMany({ where: { OR: [{ clientId: client.id }, { trainerId: client.id }] } });
+    await prisma.trainerClient.deleteMany({ where: { OR: [{ clientId: client.id }, { trainerId: client.id }] } });
 
     // Eliminar el perfil del cliente y el usuario
-    await prisma.clientProfile.delete({
-      where: { userId: client.id }
-    });
+    await prisma.clientProfile.deleteMany({ where: { userId: client.id } });
 
-    await prisma.user.delete({
-      where: { id: client.id }
-    });
+    await prisma.user.delete({ where: { id: client.id } });
 
     res.status(200).json({ message: 'Cliente eliminado exitosamente' });
   } catch (error) {
