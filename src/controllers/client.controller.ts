@@ -698,8 +698,46 @@ export const sendMonthlyRoutineEmail = async (req: Request, res: Response): Prom
   } catch (error) {
     console.error('Error sending monthly routine email:', error);
     res.status(500).json({ 
-      success: false, 
-      message: 'Error al enviar el email. Por favor, inténtalo de nuevo más tarde.' 
+      success: false,
+      message: 'Error al enviar el email. Por favor, inténtalo de nuevo más tarde.'
     });
+  }
+};
+
+export const saveClientWeekWeights = async (req: Request, res: Response): Promise<void> => {
+  try {
+    const { routineId } = req.params;
+    const { exerciseIndex, weekWeights } = req.body;
+    const user = (req as any).user;
+
+    const routine = await prisma.routine.findFirst({
+      where: { id: routineId, clientId: user.id }
+    });
+
+    if (!routine) {
+      res.status(404).json({ success: false, message: 'Rutina no encontrada' });
+      return;
+    }
+
+    const exercises = Array.isArray(routine.exercises) ? [...(routine.exercises as any[])] : [];
+    if (exerciseIndex < 0 || exerciseIndex >= exercises.length) {
+      res.status(400).json({ success: false, message: 'Índice de ejercicio inválido' });
+      return;
+    }
+
+    exercises[exerciseIndex] = {
+      ...exercises[exerciseIndex],
+      clientWeekWeights: weekWeights
+    };
+
+    await prisma.routine.update({
+      where: { id: routineId },
+      data: { exercises: exercises as Prisma.InputJsonValue }
+    });
+
+    res.json({ success: true });
+  } catch (error) {
+    console.error('Error saving week weights:', error);
+    res.status(500).json({ success: false, message: 'Error al guardar los pesos' });
   }
 };
