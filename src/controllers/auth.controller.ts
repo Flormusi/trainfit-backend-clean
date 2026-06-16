@@ -292,3 +292,35 @@ export const getInviteInfo = async (req: Request, res: Response): Promise<void> 
     res.status(500).json({ message: 'Error' });
   }
 };
+
+// Exchange Google OAuth code for tokens
+export const googleTokenExchange = async (req: Request, res: Response): Promise<void> => {
+  try {
+    const { code, redirect_uri } = req.body;
+
+    const params = new URLSearchParams({
+      client_id: process.env.GOOGLE_CLIENT_ID || '',
+      client_secret: process.env.GOOGLE_CLIENT_SECRET || '',
+      code,
+      grant_type: 'authorization_code',
+      redirect_uri,
+    });
+
+    const response = await fetch('https://oauth2.googleapis.com/token', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+      body: params,
+    });
+
+    const data = await response.json();
+
+    if (!response.ok) {
+      res.status(response.status).json({ message: 'Error al obtener tokens de Google', error: data });
+      return;
+    }
+
+    res.json(data);
+  } catch (error) {
+    res.status(500).json({ message: 'Error en token exchange' });
+  }
+};
