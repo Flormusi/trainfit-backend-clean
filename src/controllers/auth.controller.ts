@@ -315,6 +315,8 @@ export const googleTokenExchange = async (req: Request, res: Response): Promise<
     const data = await response.json();
 
     if (!response.ok) {
+      console.error('Google token exchange error:', JSON.stringify(data));
+      console.error('client_id present:', !!process.env.GOOGLE_CLIENT_ID, 'client_secret present:', !!process.env.GOOGLE_CLIENT_SECRET);
       res.status(response.status).json({ message: 'Error al obtener tokens de Google', error: data });
       return;
     }
