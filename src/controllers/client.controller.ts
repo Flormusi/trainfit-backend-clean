@@ -705,7 +705,7 @@ export const sendMonthlyRoutineEmail = async (req: Request, res: Response): Prom
 export const saveClientWeekWeights = async (req: Request, res: Response): Promise<void> => {
   try {
     const { routineId } = req.params;
-    const { exerciseIndex, weekWeights } = req.body;
+    const { exerciseIndex, weekWeights, rpe } = req.body;
     const user = (req as any).user;
 
     const routine = await prisma.routine.findFirst({
@@ -723,10 +723,10 @@ export const saveClientWeekWeights = async (req: Request, res: Response): Promis
       return;
     }
 
-    exercises[exerciseIndex] = {
-      ...exercises[exerciseIndex],
-      clientWeekWeights: weekWeights
-    };
+    const updatedExercise: any = { ...exercises[exerciseIndex] };
+    if (weekWeights !== undefined) updatedExercise.clientWeekWeights = weekWeights;
+    if (rpe !== undefined) updatedExercise.clientRpe = rpe;
+    exercises[exerciseIndex] = updatedExercise;
 
     await prisma.routine.update({
       where: { id: routineId },
