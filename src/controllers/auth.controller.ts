@@ -293,6 +293,36 @@ export const getInviteInfo = async (req: Request, res: Response): Promise<void> 
   }
 };
 
+// Refresh Google OAuth access token using refresh_token
+export const googleTokenRefresh = async (req: Request, res: Response): Promise<void> => {
+  try {
+    const { refresh_token } = req.body;
+    if (!refresh_token) {
+      res.status(400).json({ message: 'refresh_token requerido' });
+      return;
+    }
+    const params = new URLSearchParams({
+      client_id: process.env.GOOGLE_CLIENT_ID || '',
+      client_secret: process.env.GOOGLE_CLIENT_SECRET || '',
+      refresh_token,
+      grant_type: 'refresh_token',
+    });
+    const response = await fetch('https://oauth2.googleapis.com/token', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+      body: params,
+    });
+    const data = await response.json();
+    if (!response.ok) {
+      res.status(response.status).json({ message: 'Error al refrescar token de Google', error: data });
+      return;
+    }
+    res.json(data);
+  } catch (error) {
+    res.status(500).json({ message: 'Error en token refresh' });
+  }
+};
+
 // Exchange Google OAuth code for tokens
 export const googleTokenExchange = async (req: Request, res: Response): Promise<void> => {
   try {

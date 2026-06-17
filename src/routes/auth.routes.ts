@@ -8,6 +8,7 @@ import {
   activateAccount,
   getInviteInfo,
   googleTokenExchange,
+  googleTokenRefresh,
 } from '../controllers/auth.controller';
 import { protect, authorize } from '../middleware/auth.middleware';
 import { Role } from '@prisma/client';
@@ -20,5 +21,6 @@ router.post('/invite/:clientId', protect, authorize([Role.TRAINER]), generateInv
 router.get('/join/:token', getInviteInfo);
 router.post('/join/:token', activateAccount);
 router.post('/google/token', googleTokenExchange);
+router.post('/google/refresh', googleTokenRefresh);
 
 export default router;
