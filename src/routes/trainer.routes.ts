@@ -107,4 +107,30 @@ router.put('/notifications/mark-all-read', protect, requestMiddleware, authorize
 // Crear notificación de prueba (para testing)
 router.post('/notifications/test', protect, requestMiddleware, authorize([Role.TRAINER]), createTestNotification);
 
+// Datos de cobro del trainer
+import { PrismaClient } from '@prisma/client';
+const prisma = new PrismaClient();
+
+router.get('/payment-info', protect, requestMiddleware, authorize([Role.TRAINER]), async (req: any, res: any) => {
+  const profile = await prisma.trainerProfile.findUnique({ where: { userId: req.user.id } });
+  res.json({ success: true, data: { mpLink: profile?.mpLink, cbu: profile?.cbu, alias: profile?.alias, bankName: profile?.bankName, monthlyFee: profile?.monthlyFee } });
+});
+
+router.put('/payment-info', protect, requestMiddleware, authorize([Role.TRAINER]), async (req: any, res: any) => {
+  const { mpLink, cbu, alias, bankName, monthlyFee } = req.body;
+  const profile = await prisma.trainerProfile.update({
+    where: { userId: req.user.id },
+    data: { mpLink: mpLink || null, cbu: cbu || null, alias: alias || null, bankName: bankName || null, monthlyFee: monthlyFee ? parseFloat(monthlyFee) : null }
+  });
+  res.json({ success: true, data: profile });
+});
+
+// El alumno consulta los datos de cobro de su trainer
+router.get('/my-trainer-payment-info', protect, authorize([Role.CLIENT]), async (req: any, res: any) => {
+  const trainerClient = await prisma.trainerClient.findFirst({ where: { clientId: req.user.id } });
+  if (!trainerClient) return res.status(404).json({ success: false, message: 'No tenés entrenador asignado' });
+  const profile = await prisma.trainerProfile.findUnique({ where: { userId: trainerClient.trainerId } });
+  res.json({ success: true, data: { mpLink: profile?.mpLink, cbu: profile?.cbu, alias: profile?.alias, bankName: profile?.bankName, monthlyFee: profile?.monthlyFee } });
+});
+
 export default router;

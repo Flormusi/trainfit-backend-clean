@@ -55,12 +55,14 @@ router.post('/send-manual-reminder/:clientId', authenticateToken, async (req: an
 
     const trainerName = trainer?.trainerProfile?.name || trainer?.name || 'tu entrenador';
     const clientName = client.clientProfile?.name || client.name || 'Cliente';
+    const tp = trainer?.trainerProfile as any;
 
     // Enviar email de recordatorio
     const emailSent = await EmailService.sendPaymentReminderEmail(
       client.email,
       clientName,
-      trainerName
+      trainerName,
+      { mpLink: tp?.mpLink, cbu: tp?.cbu, alias: tp?.alias, bankName: tp?.bankName, monthlyFee: tp?.monthlyFee }
     );
 
     if (emailSent) {

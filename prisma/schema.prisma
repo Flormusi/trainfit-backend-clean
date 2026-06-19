@@ -122,6 +122,11 @@ model TrainerProfile {
   name                    String
   specialty               String?
   defaultPercentIncrement Float?  @default(7.5)
+  mpLink                  String?
+  cbu                     String?
+  alias                   String?
+  bankName                String?
+  monthlyFee              Float?
   user                    User    @relation(fields: [userId], references: [id])
 }
 

@@ -172,9 +172,11 @@ export class CronService {
 
       // Obtener información del entrenador si existe
       let trainerName = 'tu entrenador';
+      let trainerPaymentInfo: any = {};
       if (user.trainersAsClient && user.trainersAsClient.length > 0) {
-        const trainerProfile = user.trainersAsClient[0].trainer.trainerProfile;
+        const trainerProfile = user.trainersAsClient[0].trainer.trainerProfile as any;
         trainerName = trainerProfile?.name || user.trainersAsClient[0].trainer.name || 'tu entrenador';
+        trainerPaymentInfo = { mpLink: trainerProfile?.mpLink, cbu: trainerProfile?.cbu, alias: trainerProfile?.alias, bankName: trainerProfile?.bankName, monthlyFee: trainerProfile?.monthlyFee };
       }
 
       // Enviar email al cliente
@@ -184,7 +186,8 @@ export class CronService {
         trainerName,
         dueDate,
         reminderType,
-        emailSubject
+        emailSubject,
+        trainerPaymentInfo
       );
 
       // Crear notificación en el dashboard del cliente
@@ -225,7 +228,8 @@ export class CronService {
     trainerName: string,
     dueDate: Date,
     reminderType: 'upcoming' | 'overdue' | 'urgent',
-    subject: string
+    subject: string,
+    paymentInfo?: { mpLink?: string; cbu?: string; alias?: string; bankName?: string; monthlyFee?: number }
   ): Promise<boolean> {
     const formattedDueDate = dueDate.toLocaleDateString('es-ES', {
       weekday: 'long',

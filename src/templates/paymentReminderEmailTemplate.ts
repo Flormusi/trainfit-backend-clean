@@ -4,6 +4,11 @@ export interface PaymentReminderEmailData {
   trainerName: string;
   supportEmail?: string;
   supportPhone?: string;
+  mpLink?: string;
+  cbu?: string;
+  alias?: string;
+  bankName?: string;
+  monthlyFee?: number;
 }
 
 export const generatePaymentReminderEmailTemplate = (data: PaymentReminderEmailData): string => {
@@ -11,7 +16,12 @@ export const generatePaymentReminderEmailTemplate = (data: PaymentReminderEmailD
     clientName,
     trainerName,
     supportEmail = 'soporte@trainfit.com',
-    supportPhone = '+54 11 1234-5678'
+    supportPhone = '+54 11 1234-5678',
+    mpLink,
+    cbu,
+    alias,
+    bankName,
+    monthlyFee
   } = data;
 
   return `
@@ -77,15 +87,34 @@ export const generatePaymentReminderEmailTemplate = (data: PaymentReminderEmailD
         <p style="margin: 0 0 15px 0; color: #333; font-size: 16px; line-height: 1.6;">
           Te escribimos para recordarte que tienes un pago pendiente con tu entrenador <strong>${trainerName}</strong>.
         </p>
-        <p style="margin: 0; color: #666; font-size: 14px; line-height: 1.5;">
-          Para continuar con tu plan de entrenamiento sin interrupciones, te pedimos que regularices tu situación lo antes posible.
-        </p>
+        ${monthlyFee ? `<p style="margin: 0; color: #333; font-size: 16px; font-weight: 700;">Monto: $${monthlyFee.toLocaleString('es-AR')}</p>` : ''}
       </div>
+
+      <!-- Métodos de pago -->
+      ${(mpLink || cbu || alias) ? `
+      <div style="margin: 25px 0;">
+        <h3 style="color: #333; font-size: 18px; font-weight: 600; margin: 0 0 15px 0;">💳 Cómo pagar</h3>
+        ${mpLink ? `
+        <div style="background: #009ee3; border-radius: 10px; padding: 20px; margin-bottom: 12px; text-align: center;">
+          <p style="color: #fff; font-weight: 700; font-size: 16px; margin: 0 0 12px 0;">🟦 Mercado Pago</p>
+          <a href="${mpLink}" style="display: inline-block; background: #fff; color: #009ee3; font-weight: 700; font-size: 15px; padding: 12px 28px; border-radius: 8px; text-decoration: none;">Pagar con Mercado Pago</a>
+        </div>` : ''}
+        ${(cbu || alias) ? `
+        <div style="background: #f8f9fa; border: 1px solid #dee2e6; border-radius: 10px; padding: 20px; margin-bottom: 12px;">
+          <p style="color: #333; font-weight: 700; font-size: 16px; margin: 0 0 12px 0;">🏦 Transferencia bancaria</p>
+          ${bankName ? `<p style="margin: 4px 0; color: #555; font-size: 14px;"><strong>Banco:</strong> ${bankName}</p>` : ''}
+          ${cbu ? `<p style="margin: 4px 0; color: #555; font-size: 14px;"><strong>CBU:</strong> <span style="font-family: monospace; font-size: 13px;">${cbu}</span></p>` : ''}
+          ${alias ? `<p style="margin: 4px 0; color: #555; font-size: 14px;"><strong>Alias:</strong> <span style="font-family: monospace;">${alias}</span></p>` : ''}
+        </div>` : ''}
+        <div style="background: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 10px; padding: 16px;">
+          <p style="color: #166534; font-size: 14px; margin: 0;">💵 También podés pagar en efectivo. Coordiná con tu entrenador.</p>
+        </div>
+      </div>` : ''}
 
       <!-- Información importante -->
       <div style="background: #d1ecf1; border: 1px solid #bee5eb; border-radius: 8px; padding: 20px; margin: 25px 0;">
         <p style="margin: 0; color: #0c5460; font-size: 14px; line-height: 1.5;">
-          <strong>📝 Nota:</strong> Si ya realizaste el pago, por favor ignora este mensaje. Tu entrenador confirmará la recepción en breve.
+          <strong>📝 Nota:</strong> Si ya realizaste el pago, registralo en la app de TrainFit para que tu entrenador lo vea. Tu entrenador confirmará la recepción en breve.
         </p>
       </div>
 

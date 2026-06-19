@@ -302,20 +302,24 @@ export class EmailService {
   /**
    * Envía un recordatorio de pago al cliente
    */
-  static async sendPaymentReminderEmail(clientEmail: string, clientName: string, trainerName: string): Promise<boolean> {
-    const emailContent = `
-      <h2>Recordatorio de Pago - TrainFit</h2>
-      <p>Hola ${clientName},</p>
-      <p>Este es un recordatorio amistoso de que tienes un pago pendiente para tu entrenador ${trainerName}.</p>
-      <p>Por favor, realiza el pago lo antes posible para continuar disfrutando de todos los beneficios de tu membresía.</p>
-      <p>Si ya has realizado el pago, por favor ignora este mensaje.</p>
-      <p>Saludos,<br>El equipo de TrainFit</p>
-    `;
+  static async sendPaymentReminderEmail(
+    clientEmail: string,
+    clientName: string,
+    trainerName: string,
+    paymentInfo?: { mpLink?: string; cbu?: string; alias?: string; bankName?: string; monthlyFee?: number }
+  ): Promise<boolean> {
+    const { generatePaymentReminderEmailTemplate } = await import('../templates/paymentReminderEmailTemplate');
+    const html = generatePaymentReminderEmailTemplate({
+      clientName,
+      clientEmail,
+      trainerName,
+      ...paymentInfo
+    });
 
     return this.sendEmail({
       to: clientEmail,
-      subject: 'Recordatorio de Pago - TrainFit',
-      html: emailContent
+      subject: `Recordatorio de pago - ${trainerName}`,
+      html
     });
   }
 }
