@@ -4,7 +4,9 @@ import {
   handlePaymentWebhook,
   getClientPaymentStatus,
   updateClientPayment,
-  getMyPaymentHistory
+  getMyPaymentHistory,
+  registerMyPayment,
+  getClientPaymentHistory
 } from '../legacy/paymentController';
 import { authenticateToken } from '../middleware/authenticateToken';
 
@@ -24,5 +26,11 @@ router.put('/client/:clientId', authenticateToken, updateClientPayment);
 
 // Historial de pagos del cliente autenticado
 router.get('/my-history', authenticateToken, getMyPaymentHistory);
+
+// El cliente registra cómo pagó
+router.post('/my-payment', authenticateToken, registerMyPayment);
+
+// El trainer ve el historial de pagos de un cliente
+router.get('/client/:clientId/history', authenticateToken, getClientPaymentHistory);
 
 export default router;

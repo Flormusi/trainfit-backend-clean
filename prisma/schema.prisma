@@ -429,6 +429,9 @@ model PaymentPreference {
   description       String
   planType          String
   status            String   @default("pending")
+  paymentMethod     String?
+  paidAt            DateTime?
+  notes             String?
   externalReference String?
   dueDate           DateTime?
   createdAt         DateTime @default(now())

@@ -277,6 +277,101 @@ export const updateClientPayment = async (req: AuthenticatedRequest, res: Respon
     });
   }
 };
+// El trainer ve el historial de pagos de un cliente
+export const getClientPaymentHistory = async (req: any, res: Response): Promise<void> => {
+  try {
+    const user = req.user;
+    if (!user || !user.id) {
+      res.status(401).json({ message: 'Usuario no autenticado' });
+      return;
+    }
+
+    const { clientId } = req.params;
+
+    const trainerClientRelation = await prisma.trainerClient.findFirst({
+      where: { trainerId: user.id, clientId }
+    });
+
+    if (!trainerClientRelation) {
+      res.status(403).json({ message: 'No tenés acceso a este cliente' });
+      return;
+    }
+
+    const payments = await prisma.paymentPreference.findMany({
+      where: { clientId, trainerId: user.id },
+      orderBy: { createdAt: 'desc' },
+      take: 24
+    });
+
+    const history = payments.map((p: any) => ({
+      id: p.id,
+      date: p.paidAt || p.dueDate || p.createdAt,
+      description: p.description || 'Cuota mensual',
+      amount: p.amount,
+      status: p.status === 'paid' || p.status === 'approved' ? 'paid' : 'pending',
+      method: p.paymentMethod || null,
+      notes: p.notes || null
+    }));
+
+    res.status(200).json({ success: true, data: history });
+  } catch (error: any) {
+    res.status(500).json({ success: false, message: 'Error al obtener historial', error: error.message });
+  }
+};
+
+// El cliente registra cómo pagó este mes
+export const registerMyPayment = async (req: any, res: Response): Promise<void> => {
+  try {
+    const user = req.user;
+    if (!user || !user.id) {
+      res.status(401).json({ message: 'Usuario no autenticado' });
+      return;
+    }
+
+    const { paymentMethod, amount, notes } = req.body;
+
+    if (!paymentMethod) {
+      res.status(400).json({ success: false, message: 'El método de pago es requerido' });
+      return;
+    }
+
+    // Buscar el entrenador del cliente
+    const trainerClient = await prisma.trainerClient.findFirst({
+      where: { clientId: user.id }
+    });
+
+    if (!trainerClient) {
+      res.status(404).json({ success: false, message: 'No tenés un entrenador asignado' });
+      return;
+    }
+
+    const clientUser = await prisma.user.findUnique({
+      where: { id: user.id },
+      select: { name: true }
+    });
+
+    const payment = await prisma.paymentPreference.create({
+      data: {
+        trainerId: trainerClient.trainerId,
+        clientId: user.id,
+        amount: amount ? parseFloat(amount) : 0,
+        planType: 'mensual',
+        status: 'paid',
+        paymentMethod,
+        paidAt: new Date(),
+        notes: notes || null,
+        description: `Pago registrado por ${clientUser?.name || 'cliente'}`,
+        externalReference: `client-${user.id}-${Date.now()}`
+      }
+    });
+
+    res.status(201).json({ success: true, data: payment });
+  } catch (error: any) {
+    console.error('Error registering payment:', error);
+    res.status(500).json({ success: false, message: 'Error al registrar pago', error: error.message });
+  }
+};
+
 // Obtener historial de pagos del cliente (para el dashboard del cliente)
 export const getMyPaymentHistory = async (req: any, res: Response): Promise<void> => {
   try {
@@ -292,13 +387,14 @@ export const getMyPaymentHistory = async (req: any, res: Response): Promise<void
       take: 24
     });
 
-    const history = payments.map((p: any, i: number) => ({
+    const history = payments.map((p: any) => ({
       id: p.id,
-      date: p.dueDate || p.createdAt,
+      date: p.paidAt || p.dueDate || p.createdAt,
       description: p.description || `Cuota mensual`,
       amount: p.amount,
       status: p.status === 'paid' || p.status === 'approved' ? 'paid' : 'pending',
-      method: 'Transferencia bancaria'
+      method: p.paymentMethod || 'No especificado',
+      notes: p.notes || null
     }));
 
     res.status(200).json({ success: true, data: history });
