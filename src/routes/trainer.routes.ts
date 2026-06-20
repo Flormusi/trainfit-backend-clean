@@ -107,6 +107,54 @@ router.put('/notifications/mark-all-read', protect, requestMiddleware, authorize
 // Crear notificación de prueba (para testing)
 router.post('/notifications/test', protect, requestMiddleware, authorize([Role.TRAINER]), createTestNotification);
 
+// RPE logs de un cliente
+router.get('/clients/:clientId/rpe-logs', protect, requestMiddleware, authorize([Role.TRAINER]), async (req: any, res: any) => {
+  try {
+    const { clientId } = req.params;
+    const { year, month } = req.query;
+
+    const where: any = { clientId };
+    if (year) where.year = parseInt(year);
+    if (month) where.month = parseInt(month);
+
+    const logs = await prisma.exerciseRpeLog.findMany({
+      where,
+      orderBy: { loggedAt: 'desc' },
+    });
+
+    // Métricas por mes
+    const byMonth: Record<string, { month: number; year: number; avgRpe: number; count: number }> = {};
+    logs.forEach((log: any) => {
+      const key = `${log.year}-${log.month}`;
+      if (!byMonth[key]) byMonth[key] = { month: log.month, year: log.year, avgRpe: 0, count: 0 };
+      byMonth[key].avgRpe += log.rpe;
+      byMonth[key].count++;
+    });
+    Object.values(byMonth).forEach((m: any) => { m.avgRpe = Math.round((m.avgRpe / m.count) * 10) / 10; });
+
+    // Métricas por ejercicio (promedio histórico)
+    const byExercise: Record<string, { name: string; avgRpe: number; count: number; lastRpe: number }> = {};
+    logs.forEach((log: any) => {
+      const key = `${log.routineId}-${log.exerciseIndex}`;
+      if (!byExercise[key]) byExercise[key] = { name: log.exerciseName, avgRpe: 0, count: 0, lastRpe: log.rpe };
+      byExercise[key].avgRpe += log.rpe;
+      byExercise[key].count++;
+    });
+    Object.values(byExercise).forEach((e: any) => { e.avgRpe = Math.round((e.avgRpe / e.count) * 10) / 10; });
+
+    res.json({
+      success: true,
+      data: {
+        logs,
+        byMonth: Object.values(byMonth).sort((a, b) => a.year !== b.year ? a.year - b.year : a.month - b.month),
+        byExercise: Object.values(byExercise).sort((a, b) => b.avgRpe - a.avgRpe),
+      }
+    });
+  } catch (error: any) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+});
+
 // Datos de cobro del trainer
 import { PrismaClient } from '@prisma/client';
 const prisma = new PrismaClient();

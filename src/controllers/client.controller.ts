@@ -728,10 +728,28 @@ export const saveClientWeekWeights = async (req: Request, res: Response): Promis
     if (rpe !== undefined) updatedExercise.clientRpe = rpe;
     exercises[exerciseIndex] = updatedExercise;
 
-    await prisma.routine.update({
-      where: { id: routineId },
-      data: { exercises: exercises as Prisma.InputJsonValue }
-    });
+    const now = new Date();
+    await Promise.all([
+      prisma.routine.update({
+        where: { id: routineId },
+        data: { exercises: exercises as Prisma.InputJsonValue }
+      }),
+      // Guardar log de RPE con fecha si se envió un RPE
+      ...(rpe !== undefined && rpe !== null && rpe !== '' ? [(prisma as any).exerciseRpeLog.upsert({
+        where: { id: `${user.id}-${routineId}-${exerciseIndex}-${now.getFullYear()}-${now.getMonth() + 1}` },
+        update: { rpe: Number(rpe), loggedAt: now },
+        create: {
+          id: `${user.id}-${routineId}-${exerciseIndex}-${now.getFullYear()}-${now.getMonth() + 1}`,
+          clientId: user.id,
+          routineId,
+          exerciseIndex,
+          exerciseName: exercises[exerciseIndex]?.name || '',
+          rpe: Number(rpe),
+          month: now.getMonth() + 1,
+          year: now.getFullYear(),
+        }
+      })] : [])
+    ]);
 
     res.json({ success: true });
   } catch (error) {

@@ -46,6 +46,7 @@ model User {
   createdTemplates            RoutineTemplate[]     @relation("CreatedTemplates")
   trainerPayments             PaymentPreference[]   @relation("TrainerPayments")
   clientPayments              PaymentPreference[]   @relation("ClientPayments")
+  rpeLogs                     ExerciseRpeLog[]      @relation("ClientRpeLogs")
   calendarIntegrations        CalendarIntegration[] @relation("ClientCalendarIntegrations")
 }
 
@@ -202,6 +203,22 @@ model RoutineAssignment {
   client                User     @relation("ClientAssignments", fields: [clientId], references: [id], onDelete: Cascade)
   routine               Routine  @relation(fields: [routineId], references: [id], onDelete: Cascade)
   trainer               User     @relation("TrainerAssignments", fields: [trainerId], references: [id], onDelete: Cascade)
+}
+
+model ExerciseRpeLog {
+  id            String   @id @default(cuid())
+  clientId      String
+  routineId     String
+  exerciseIndex Int
+  exerciseName  String
+  rpe           Int
+  month         Int
+  year          Int
+  loggedAt      DateTime @default(now())
+  client        User     @relation("ClientRpeLogs", fields: [clientId], references: [id], onDelete: Cascade)
+
+  @@index([clientId, routineId])
+  @@index([clientId, year, month])
 }
 
 model Message {
