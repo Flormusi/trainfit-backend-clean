@@ -107,6 +107,53 @@ router.put('/notifications/mark-all-read', protect, requestMiddleware, authorize
 // Crear notificación de prueba (para testing)
 router.post('/notifications/test', protect, requestMiddleware, authorize([Role.TRAINER]), createTestNotification);
 
+// Migración one-time: importar clientRpe existentes al log con fecha actual
+router.post('/migrate-rpe-logs', protect, requestMiddleware, authorize([Role.TRAINER]), async (req: any, res: any) => {
+  try {
+    const now = new Date();
+    const month = now.getMonth() + 1;
+    const year = now.getFullYear();
+
+    // Obtener todas las rutinas de los clientes del trainer
+    const trainerClients = await prisma.trainerClient.findMany({ where: { trainerId: req.user.id } });
+    const clientIds = trainerClients.map((tc: any) => tc.clientId);
+
+    const routines = await prisma.routine.findMany({
+      where: { clientId: { in: clientIds } }
+    });
+
+    let imported = 0;
+    for (const routine of routines) {
+      const exercises = Array.isArray(routine.exercises) ? routine.exercises as any[] : [];
+      for (let i = 0; i < exercises.length; i++) {
+        const ex = exercises[i];
+        if (ex.clientRpe !== undefined && ex.clientRpe !== null && ex.clientRpe !== '') {
+          const id = `${routine.clientId}-${routine.id}-${i}-${year}-${month}`;
+          await (prisma as any).exerciseRpeLog.upsert({
+            where: { id },
+            update: {},
+            create: {
+              id,
+              clientId: routine.clientId,
+              routineId: routine.id,
+              exerciseIndex: i,
+              exerciseName: ex.name || '',
+              rpe: Number(ex.clientRpe),
+              month,
+              year,
+            }
+          });
+          imported++;
+        }
+      }
+    }
+
+    res.json({ success: true, imported });
+  } catch (error: any) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+});
+
 // RPE logs de un cliente
 router.get('/clients/:clientId/rpe-logs', protect, requestMiddleware, authorize([Role.TRAINER]), async (req: any, res: any) => {
   try {
