@@ -18,7 +18,10 @@ export class CronService {
     
     // Limpiar notificaciones antiguas cada domingo a las 2:00 AM
     this.scheduleNotificationCleanup();
-    
+
+    // Generar reportes mensuales el último día de cada mes a las 20:00
+    this.scheduleMonthlyReports();
+
     console.log('✅ Trabajos cron inicializados correctamente');
   }
 
@@ -412,5 +415,123 @@ export class CronService {
     console.log('🧪 Ejecutando prueba de recordatorios de pago...');
     await this.checkAndSendPaymentReminders();
     console.log('✅ Prueba de recordatorios completada');
+  }
+
+  /**
+   * Cron: generar reportes mensuales el último día del mes a las 20:00
+   */
+  private static scheduleMonthlyReports() {
+    // Corre todos los días a las 20:00 — la función verifica si es el último día del mes
+    cron.schedule('0 20 * * *', async () => {
+      const now = new Date();
+      const tomorrow = new Date(now);
+      tomorrow.setDate(tomorrow.getDate() + 1);
+      // Es el último día del mes si mañana es día 1
+      if (tomorrow.getDate() === 1) {
+        console.log('📊 Generando reportes mensuales de RPE...');
+        await this.generateMonthlyReports(now.getMonth() + 1, now.getFullYear());
+      }
+    }, { timezone: 'America/Argentina/Buenos_Aires' });
+  }
+
+  static async generateMonthlyReports(month: number, year: number): Promise<void> {
+    const monthNames = ['', 'Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'];
+
+    // Obtener todos los trainers
+    const trainers = await prisma.user.findMany({
+      where: { role: 'TRAINER' },
+      include: {
+        trainerProfile: true,
+        clientsAsTrainer: {
+          include: {
+            client: {
+              include: { clientProfile: true }
+            }
+          }
+        }
+      }
+    });
+
+    for (const trainer of trainers) {
+      const clientSummaries: string[] = [];
+
+      for (const tc of (trainer as any).clientsAsTrainer) {
+        const client = tc.client;
+        const clientName = client.clientProfile?.name || client.name || 'Cliente';
+
+        // Obtener RPE logs del mes
+        const logs = await (prisma as any).exerciseRpeLog.findMany({
+          where: { clientId: client.id, month, year }
+        });
+
+        if (logs.length === 0) continue;
+
+        // Calcular métricas
+        const avgRpe = Math.round((logs.reduce((s: number, l: any) => s + l.rpe, 0) / logs.length) * 10) / 10;
+
+        // Agrupar por ejercicio
+        const byEx: Record<string, { name: string; rpes: number[] }> = {};
+        logs.forEach((l: any) => {
+          const key = `${l.routineId}-${l.exerciseIndex}`;
+          if (!byEx[key]) byEx[key] = { name: l.exerciseName, rpes: [] };
+          byEx[key].rpes.push(l.rpe);
+        });
+
+        const highRpe = Object.values(byEx)
+          .map((e: any) => ({ name: e.name, avg: Math.round(e.rpes.reduce((s: number, r: number) => s + r, 0) / e.rpes.length * 10) / 10 }))
+          .filter((e: any) => e.avg >= 8)
+          .sort((a: any, b: any) => b.avg - a.avg);
+
+        const lowRpe = Object.values(byEx)
+          .map((e: any) => ({ name: e.name, avg: Math.round(e.rpes.reduce((s: number, r: number) => s + r, 0) / e.rpes.length * 10) / 10 }))
+          .filter((e: any) => e.avg <= 4)
+          .sort((a: any, b: any) => a.avg - b.avg);
+
+        const summary = `RPE promedio: ${avgRpe}/10 | ${highRpe.length} ejercicios con carga alta | ${lowRpe.length} ejercicios para progresar`;
+
+        // Guardar reporte
+        await (prisma as any).monthlyReport.upsert({
+          where: { clientId_month_year: { clientId: client.id, month, year } },
+          update: { avgRpe, totalExercises: Object.keys(byEx).length, highRpeExercises: highRpe, lowRpeExercises: lowRpe, summary },
+          create: {
+            clientId: client.id,
+            trainerId: trainer.id,
+            month, year, avgRpe,
+            totalExercises: Object.keys(byEx).length,
+            highRpeExercises: highRpe,
+            lowRpeExercises: lowRpe,
+            summary
+          }
+        });
+
+        clientSummaries.push(`• ${clientName}: RPE promedio ${avgRpe}${highRpe.length ? ` | ⚠️ ${highRpe.map((e: any) => e.name).join(', ')}` : ''}${lowRpe.length ? ` | ⬆️ ${lowRpe.map((e: any) => e.name).join(', ')}` : ''}`);
+      }
+
+      // Enviar email al trainer si hay datos
+      if (clientSummaries.length > 0) {
+        const trainerName = (trainer as any).trainerProfile?.name || trainer.name || 'Trainer';
+        const html = `
+          <div style="font-family:Arial,sans-serif;max-width:600px;margin:0 auto;background:#0a0a0a;color:#fff;padding:32px;border-radius:12px;">
+            <h1 style="color:#dc2626;font-size:24px;margin:0 0 4px">TRAINFIT</h1>
+            <p style="color:#6b7280;margin:0 0 24px;font-size:13px">Reporte mensual de rendimiento</p>
+            <h2 style="color:#fff;font-size:18px;margin:0 0 8px">Hola ${trainerName} 👋</h2>
+            <p style="color:#9ca3af;margin:0 0 24px">Acá está el resumen de RPE de tus alumnos en <strong style="color:#fff">${monthNames[month]} ${year}</strong>:</p>
+            <div style="background:#1e1e1e;border-radius:10px;padding:20px;margin-bottom:24px;">
+              ${clientSummaries.map(s => `<p style="margin:8px 0;color:#e5e7eb;font-size:14px;line-height:1.5">${s}</p>`).join('')}
+            </div>
+            <div style="background:#1a1a1a;border-radius:10px;padding:16px;border-left:3px solid #dc2626;">
+              <p style="margin:0;color:#9ca3af;font-size:13px">⚠️ = ejercicios con RPE alto → considerar bajar carga<br>⬆️ = ejercicios con RPE bajo → candidatos a progresar</p>
+            </div>
+            <p style="color:#6b7280;font-size:12px;margin-top:24px;text-align:center">TrainFit · Reporte automático fin de mes</p>
+          </div>
+        `;
+        await EmailService.sendEmail({
+          to: trainer.email,
+          subject: `📊 Reporte de rendimiento ${monthNames[month]} ${year} — TrainFit`,
+          html
+        });
+        console.log(`✅ Reporte mensual enviado a ${trainer.email}`);
+      }
+    }
   }
 }

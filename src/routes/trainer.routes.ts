@@ -220,6 +220,20 @@ router.put('/payment-info', protect, requestMiddleware, authorize([Role.TRAINER]
   res.json({ success: true, data: profile });
 });
 
+// Reportes mensuales de un cliente
+router.get('/clients/:clientId/monthly-reports', protect, requestMiddleware, authorize([Role.TRAINER]), async (req: any, res: any) => {
+  try {
+    const { clientId } = req.params;
+    const reports = await (prisma as any).monthlyReport.findMany({
+      where: { clientId, trainerId: req.user.id },
+      orderBy: [{ year: 'desc' }, { month: 'desc' }],
+    });
+    res.json({ success: true, data: reports });
+  } catch (error: any) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+});
+
 // El alumno consulta los datos de cobro de su trainer
 router.get('/my-trainer-payment-info', protect, authorize([Role.CLIENT]), async (req: any, res: any) => {
   const trainerClient = await prisma.trainerClient.findFirst({ where: { clientId: req.user.id } });

@@ -47,6 +47,8 @@ model User {
   trainerPayments             PaymentPreference[]   @relation("TrainerPayments")
   clientPayments              PaymentPreference[]   @relation("ClientPayments")
   rpeLogs                     ExerciseRpeLog[]      @relation("ClientRpeLogs")
+  clientMonthlyReports        MonthlyReport[]       @relation("ClientMonthlyReports")
+  trainerMonthlyReports       MonthlyReport[]       @relation("TrainerMonthlyReports")
   calendarIntegrations        CalendarIntegration[] @relation("ClientCalendarIntegrations")
 }
 
@@ -203,6 +205,25 @@ model RoutineAssignment {
   client                User     @relation("ClientAssignments", fields: [clientId], references: [id], onDelete: Cascade)
   routine               Routine  @relation(fields: [routineId], references: [id], onDelete: Cascade)
   trainer               User     @relation("TrainerAssignments", fields: [trainerId], references: [id], onDelete: Cascade)
+}
+
+model MonthlyReport {
+  id                String   @id @default(cuid())
+  clientId          String
+  trainerId         String
+  month             Int
+  year              Int
+  avgRpe            Float?
+  totalExercises    Int      @default(0)
+  highRpeExercises  Json?
+  lowRpeExercises   Json?
+  summary           String?
+  createdAt         DateTime @default(now())
+  client            User     @relation("ClientMonthlyReports", fields: [clientId], references: [id], onDelete: Cascade)
+  trainer           User     @relation("TrainerMonthlyReports", fields: [trainerId], references: [id], onDelete: Cascade)
+
+  @@unique([clientId, month, year])
+  @@index([trainerId, year, month])
 }
 
 model ExerciseRpeLog {
