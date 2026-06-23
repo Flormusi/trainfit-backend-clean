@@ -233,6 +233,7 @@ model ExerciseRpeLog {
   exerciseIndex Int
   exerciseName  String
   rpe           Int
+  week          Int      @default(1)
   month         Int
   year          Int
   loggedAt      DateTime @default(now())

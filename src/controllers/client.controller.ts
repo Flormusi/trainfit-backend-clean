@@ -729,24 +729,27 @@ export const saveClientWeekWeights = async (req: Request, res: Response): Promis
     exercises[exerciseIndex] = updatedExercise;
 
     const now = new Date();
+    const month = now.getMonth() + 1;
+    const year = now.getFullYear();
+    const week = Math.min(4, Math.ceil(now.getDate() / 7));
     await Promise.all([
       prisma.routine.update({
         where: { id: routineId },
         data: { exercises: exercises as Prisma.InputJsonValue }
       }),
-      // Guardar log de RPE con fecha si se envió un RPE
       ...(rpe !== undefined && rpe !== null && rpe !== '' ? [(prisma as any).exerciseRpeLog.upsert({
-        where: { id: `${user.id}-${routineId}-${exerciseIndex}-${now.getFullYear()}-${now.getMonth() + 1}` },
+        where: { id: `${user.id}-${routineId}-${exerciseIndex}-${year}-${month}-${week}` },
         update: { rpe: Number(rpe), loggedAt: now },
         create: {
-          id: `${user.id}-${routineId}-${exerciseIndex}-${now.getFullYear()}-${now.getMonth() + 1}`,
+          id: `${user.id}-${routineId}-${exerciseIndex}-${year}-${month}-${week}`,
           clientId: user.id,
           routineId,
           exerciseIndex,
           exerciseName: exercises[exerciseIndex]?.name || '',
           rpe: Number(rpe),
-          month: now.getMonth() + 1,
-          year: now.getFullYear(),
+          week,
+          month,
+          year,
         }
       })] : [])
     ]);

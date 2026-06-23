@@ -179,15 +179,19 @@ router.get('/clients/:clientId/rpe-logs', protect, requestMiddleware, authorize(
     });
     Object.values(byMonth).forEach((m: any) => { m.avgRpe = Math.round((m.avgRpe / m.count) * 10) / 10; });
 
-    // Métricas por ejercicio (promedio histórico)
-    const byExercise: Record<string, { name: string; avgRpe: number; count: number; lastRpe: number }> = {};
+    // Métricas por ejercicio con evolución semanal
+    const byExercise: Record<string, { name: string; avgRpe: number; count: number; lastRpe: number; weekly: { week: number; month: number; year: number; rpe: number }[] }> = {};
     logs.forEach((log: any) => {
       const key = `${log.routineId}-${log.exerciseIndex}`;
-      if (!byExercise[key]) byExercise[key] = { name: log.exerciseName, avgRpe: 0, count: 0, lastRpe: log.rpe };
+      if (!byExercise[key]) byExercise[key] = { name: log.exerciseName, avgRpe: 0, count: 0, lastRpe: log.rpe, weekly: [] };
       byExercise[key].avgRpe += log.rpe;
       byExercise[key].count++;
+      byExercise[key].weekly.push({ week: log.week || 1, month: log.month, year: log.year, rpe: log.rpe });
     });
-    Object.values(byExercise).forEach((e: any) => { e.avgRpe = Math.round((e.avgRpe / e.count) * 10) / 10; });
+    Object.values(byExercise).forEach((e: any) => {
+      e.avgRpe = Math.round((e.avgRpe / e.count) * 10) / 10;
+      e.weekly.sort((a: any, b: any) => a.year !== b.year ? a.year - b.year : a.month !== b.month ? a.month - b.month : a.week - b.week);
+    });
 
     res.json({
       success: true,
