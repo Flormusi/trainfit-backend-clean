@@ -717,6 +717,16 @@ export const saveClientWeekWeights = async (req: Request, res: Response): Promis
       return;
     }
 
+    // Calcular semana desde la fecha de inicio de la asignación
+    const assignment = await prisma.routineAssignment.findFirst({
+      where: { routineId, clientId: user.id },
+      orderBy: { assignedDate: 'desc' }
+    });
+    const startDate = assignment?.startDate ? new Date(assignment.startDate) : new Date();
+    const now = new Date();
+    const diffDays = Math.floor((now.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24));
+    const weekFromAssignment = Math.min(4, Math.max(1, Math.floor(diffDays / 7) + 1));
+
     const exercises = Array.isArray(routine.exercises) ? [...(routine.exercises as any[])] : [];
     if (exerciseIndex < 0 || exerciseIndex >= exercises.length) {
       res.status(400).json({ success: false, message: 'Índice de ejercicio inválido' });
@@ -728,10 +738,9 @@ export const saveClientWeekWeights = async (req: Request, res: Response): Promis
     if (rpe !== undefined) updatedExercise.clientRpe = rpe;
     exercises[exerciseIndex] = updatedExercise;
 
-    const now = new Date();
     const month = now.getMonth() + 1;
     const year = now.getFullYear();
-    const week = Math.min(4, Math.ceil(now.getDate() / 7));
+    const week = weekFromAssignment;
     await Promise.all([
       prisma.routine.update({
         where: { id: routineId },
