@@ -1,9 +1,9 @@
 import { Request, Response } from 'express';
 import { MercadoPagoConfig, Preference } from 'mercadopago';
-import { PrismaClient, Role } from '@prisma/client';
+import { Role } from '@prisma/client';
 import { UserProfile } from '../types/express';
 
-const prisma = new PrismaClient();
+import prisma from '../utils/prisma';
 
 // Configurar Mercado Pago
 const client = new MercadoPagoConfig({
@@ -106,7 +106,7 @@ export const createPaymentPreference = async (req: AuthenticatedRequest, res: Re
     });
 
   } catch (error: any) {
-    console.error('Error creating payment preference:', error);
+    console.error("Error creating payment preference:");
     res.status(500).json({ 
       success: false, 
       message: 'Error al crear la preferencia de pago',
@@ -126,7 +126,7 @@ export const handlePaymentWebhook = async (req: Request, res: Response): Promise
       // Aquí podrías consultar el estado del pago usando la API de Mercado Pago
       // y actualizar el estado en tu base de datos
       
-      console.log('Payment notification received:', paymentId);
+
       
       // Actualizar el estado del pago en la base de datos
       // Esta lógica se puede expandir según las necesidades
@@ -137,7 +137,7 @@ export const handlePaymentWebhook = async (req: Request, res: Response): Promise
     }
 
   } catch (error: any) {
-    console.error('Error handling payment webhook:', error);
+    console.error("Error handling payment webhook:");
     res.status(500).json({ 
       success: false, 
       message: 'Error al procesar webhook',
@@ -206,7 +206,7 @@ export const getClientPaymentStatus = async (req: AuthenticatedRequest, res: Res
     });
 
   } catch (error: any) {
-    console.error('Error getting client payment status:', error);
+    console.error("Error getting client payment status:");
     res.status(500).json({ 
       success: false, 
       message: 'Error al obtener estado de pago',
@@ -269,7 +269,7 @@ export const updateClientPayment = async (req: AuthenticatedRequest, res: Respon
     });
 
   } catch (error: any) {
-    console.error('Error updating client payment:', error);
+    console.error("Error updating client payment:");
     res.status(500).json({ 
       success: false, 
       message: 'Error al actualizar información de pago',
@@ -367,7 +367,7 @@ export const registerMyPayment = async (req: any, res: Response): Promise<void> 
 
     res.status(201).json({ success: true, data: payment });
   } catch (error: any) {
-    console.error('Error registering payment:', error);
+    console.error("Error registering payment:");
     res.status(500).json({ success: false, message: 'Error al registrar pago', error: error.message });
   }
 };

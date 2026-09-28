@@ -1,8 +1,8 @@
 import { Request, Response } from 'express';
-import { PrismaClient, SubscriptionPlan, SubscriptionStatus } from '@prisma/client';
+import { SubscriptionPlan, SubscriptionStatus } from '@prisma/client';
 import Stripe from 'stripe';
 
-const prisma = new PrismaClient();
+import prisma from '../utils/prisma';
 
 // Inicializar Stripe (necesitarás agregar tu clave secreta en .env)
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!);
@@ -128,7 +128,7 @@ export const createSubscription = async (req: AuthRequest, res: Response) => {
     });
 
   } catch (error: any) {
-    console.error('Error creating subscription:', error);
+    console.error("Error creating subscription:");
     res.status(500).json({
       success: false,
       message: 'Error al crear la suscripción',
@@ -164,7 +164,7 @@ export const getUserSubscription = async (req: AuthRequest, res: Response) => {
     });
 
   } catch (error: any) {
-    console.error('Error getting subscription:', error);
+    console.error("Error getting subscription:");
     res.status(500).json({
       success: false,
       message: 'Error al obtener la suscripción',
@@ -217,7 +217,7 @@ export const cancelSubscription = async (req: AuthRequest, res: Response) => {
     });
 
   } catch (error: any) {
-    console.error('Error canceling subscription:', error);
+    console.error("Error canceling subscription:");
     res.status(500).json({
       success: false,
       message: 'Error al cancelar la suscripción',
@@ -242,7 +242,7 @@ export const stripeWebhook = async (req: Request, res: Response) => {
 
     event = stripe.webhooks.constructEvent(req.body, sig, endpointSecret);
   } catch (err: any) {
-    console.error('Webhook signature verification failed:', err.message);
+    console.error("Webhook signature verification failed:");
     return res.status(400).send(`Webhook Error: ${err.message}`);
   }
 
@@ -265,12 +265,12 @@ export const stripeWebhook = async (req: Request, res: Response) => {
         break;
       
       default:
-        console.log(`Unhandled event type ${event.type}`);
+
     }
 
     res.status(200).json({ received: true });
   } catch (error: any) {
-    console.error('Error processing webhook:', error);
+    console.error("Error processing webhook:");
     res.status(500).json({ error: 'Webhook processing failed' });
   }
 };
@@ -380,7 +380,7 @@ export const getPaymentHistory = async (req: AuthRequest, res: Response) => {
     });
 
   } catch (error: any) {
-    console.error('Error getting payment history:', error);
+    console.error("Error getting payment history:");
     res.status(500).json({
       success: false,
       message: 'Error al obtener el historial de pagos',

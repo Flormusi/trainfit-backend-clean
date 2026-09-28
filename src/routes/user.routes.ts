@@ -1,8 +1,8 @@
 import express, { Request, Response, NextFunction, RequestHandler } from 'express';
 import { protect } from '../middleware/auth.middleware';
-import { PrismaClient, User, Prisma } from '@prisma/client';
+import { User, Prisma } from '@prisma/client';
 
-const prisma = new PrismaClient();
+import prisma from '../utils/prisma';
 
 const router = express.Router();
 
@@ -29,7 +29,7 @@ const getUserByIdHandler: RequestHandler<GetUserParams, UserResponse | ErrorResp
   next
 ) => {
   const { clientId } = req.params;
-  console.log(`Solicitud async para obtener datos del cliente ID: ${clientId}`);
+
 
   try {
     const user = await prisma.user.findUnique({
@@ -49,7 +49,7 @@ const getUserByIdHandler: RequestHandler<GetUserParams, UserResponse | ErrorResp
       hasCompletedOnboarding: user.hasCompletedOnboarding
     });
   } catch (err) {
-    console.error('Error al obtener usuario:', err);
+    console.error("Error al obtener usuario:");
     next(err); // Pasa el error al manejador de errores de Express
   }
 };
@@ -67,8 +67,8 @@ const updateUserOnboardingDataHandler: RequestHandler<UpdateOnboardingParams, Us
   const { userId } = req.params;
   const { name, ...profileData } = req.body;
 
-  console.log(`Solicitud para actualizar onboarding del usuario ID: ${userId}`);
-  console.log('Datos de onboarding recibidos:', profileData);
+
+
 
   try {
     // Filtrar solo los campos que existen en el esquema ClientProfile
@@ -86,7 +86,7 @@ const updateUserOnboardingDataHandler: RequestHandler<UpdateOnboardingParams, Us
       trainingDaysPerWeek: profileData.trainingDaysPerWeek ? parseInt(profileData.trainingDaysPerWeek) : 3
     };
 
-    console.log('Datos procesados para Prisma:', validProfileFields);
+
 
     const updatedUser = await prisma.user.update({
       where: { id: userId },
@@ -122,7 +122,7 @@ const updateUserOnboardingDataHandler: RequestHandler<UpdateOnboardingParams, Us
     });
     return;
   } catch (error) {
-    console.error('Error al actualizar datos de onboarding:', error);
+    console.error("Error al actualizar datos de onboarding:");
     res.status(500).json({ message: 'Error interno del servidor al actualizar onboarding.' });
     return;
   }

@@ -59,9 +59,9 @@ export class CalendarService {
         throw new Error(result.error || 'Error enviando invitación de calendario');
       }
       
-      console.log(`📧 Invitación de calendario enviada exitosamente: ${result.messageId}`);
+
     } catch (error) {
-      console.error('❌ Error enviando invitación de calendario:', error);
+      console.error("❌ Error enviando invitación de calendario:");
       throw error;
     }
   }
@@ -119,9 +119,9 @@ export class CalendarService {
         sendUpdates: 'all'
       });
 
-      console.log(`📅 Evento sincronizado con Google Calendar: ${response.data.id}`);
+
     } catch (error) {
-      console.error('❌ Error sincronizando con Google Calendar:', error);
+      console.error("❌ Error sincronizando con Google Calendar:");
       throw error;
     }
   }
@@ -134,17 +134,17 @@ export class CalendarService {
       if (integration && integration.provider === 'google') {
         // Cliente tiene calendario conectado - sincronizar directamente
         await this.syncWithGoogleCalendar(event, integration);
-        console.log(`✅ Evento sincronizado directamente con ${integration.provider} para ${event.clientName}`);
+
       } else {
         // Cliente no tiene calendario conectado - enviar por email
         await this.sendCalendarInvitation(event);
-        console.log(`✅ Invitación enviada por email a ${event.clientName}`);
+
       }
     } catch (error) {
-      console.error('❌ Error procesando evento de entrenamiento:', error);
+      console.error("❌ Error procesando evento de entrenamiento:");
       // Fallback: si falla la sincronización directa, enviar por email
       if (integration) {
-        console.log('🔄 Fallback: enviando invitación por email...');
+
         await this.sendCalendarInvitation(event);
       }
       throw error;
@@ -171,7 +171,7 @@ export class CalendarService {
       
       return null;
     } catch (error) {
-      console.error('Error checking calendar integration:', error);
+      console.error("Error checking calendar integration:");
       return null;
     }
   }

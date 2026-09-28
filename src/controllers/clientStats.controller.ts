@@ -18,7 +18,7 @@ export const getClientStats: RequestHandler = async (req, res) => {
       data: stats
     });
   } catch (error: any) {
-    console.error('Error fetching stats:', error);
+    console.error("Error fetching stats:");
     res.status(500).json({
       success: false,
       message: error.message || 'Server error'

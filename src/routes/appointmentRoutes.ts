@@ -1,10 +1,10 @@
 import express from 'express';
-import { PrismaClient } from '@prisma/client';
+
 import { authenticateToken } from '../middleware/authenticateToken';
 import { CalendarService } from '../services/calendarService';
 
 const router = express.Router();
-const prisma = new PrismaClient();
+import prisma from '../utils/prisma';
 const calendarService = new CalendarService();
 
 // Obtener todas las citas del usuario
@@ -76,7 +76,7 @@ router.get('/', authenticateToken, async (req, res) => {
 
     res.json(appointments);
   } catch (error) {
-    console.error('Error fetching appointments:', error);
+    console.error("Error fetching appointments:");
     res.status(500).json({ message: 'Error interno del servidor' });
   }
 });
@@ -266,15 +266,15 @@ router.post('/', authenticateToken, async (req, res) => {
       const integration = await calendarService.hasCalendarIntegration(appointment.clientId);
       
       await calendarService.processTrainingEvent(trainingEvent, integration || undefined);
-      console.log('✅ Evento sincronizado automáticamente con calendario');
+
     } catch (calendarError) {
-      console.error('⚠️ Error en sincronización de calendario (no crítico):', calendarError);
+      console.error("⚠️ Error en sincronización de calendario (no crítico):");
       // No interrumpimos el flujo principal si falla la sincronización
     }
 
     res.status(201).json(appointment);
   } catch (error) {
-    console.error('Error creating appointment:', error);
+    console.error("Error creating appointment:");
     res.status(500).json({ message: 'Error interno del servidor' });
   }
 });
@@ -352,7 +352,7 @@ router.put('/:appointmentId', authenticateToken, async (req, res) => {
 
     res.json(updatedAppointment);
   } catch (error) {
-    console.error('Error updating appointment:', error);
+    console.error("Error updating appointment:");
     res.status(500).json({ message: 'Error interno del servidor' });
   }
 });
@@ -396,7 +396,7 @@ router.delete('/:appointmentId', authenticateToken, async (req, res) => {
 
     res.json({ message: 'Cita cancelada exitosamente', appointment: cancelledAppointment });
   } catch (error) {
-    console.error('Error cancelling appointment:', error);
+    console.error("Error cancelling appointment:");
     res.status(500).json({ message: 'Error interno del servidor' });
   }
 });
@@ -439,7 +439,7 @@ router.get('/trainer/:trainerId/availability', authenticateToken, async (req, re
 
     res.json({ appointments });
   } catch (error) {
-    console.error('Error fetching availability:', error);
+    console.error("Error fetching availability:");
     res.status(500).json({ message: 'Error interno del servidor' });
   }
 });

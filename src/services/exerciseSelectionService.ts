@@ -1,4 +1,4 @@
-import { PrismaClient } from '@prisma/client';
+
 import { 
   getObjectiveRules, 
   getMuscleQuotasForDay, 
@@ -9,7 +9,7 @@ import {
 } from '../types/objectiveRules';
 import { logger } from '../utils/logger';
 
-const prisma = new PrismaClient();
+import prisma from '../utils/prisma';
 
 export interface ExerciseSelectionParams {
   objetivo: string;
@@ -46,7 +46,7 @@ export interface SelectedExercise {
 export const selectExercisesForDay = async (params: ExerciseSelectionParams): Promise<SelectedExercise[]> => {
   const { objetivo, splitDay, nivel, genero, dias } = params;
   
-  logger.info(`Seleccionando ejercicios para objetivo: ${objetivo}, día: ${splitDay}, nivel: ${nivel}`);
+  logger.info("Diagnostic src/services/exerciseSelectionService.ts:49");
   
   // Obtener reglas del objetivo
   const rules = getObjectiveRules(objetivo);
@@ -100,7 +100,7 @@ export const selectExercisesForDay = async (params: ExerciseSelectionParams): Pr
     selectedExercises.push(...fillerExercises);
   }
   
-  logger.info(`Seleccionados ${selectedExercises.length} ejercicios para el día ${splitDay}`);
+  logger.info("Diagnostic src/services/exerciseSelectionService.ts:103");
   return selectedExercises.slice(0, 10); // Asegurar máximo 10 ejercicios
 };
 
@@ -135,7 +135,7 @@ const selectMobilityExercises = async (count: number, startOrder: number): Promi
       })
     );
   } catch (error) {
-    logger.error('Error seleccionando ejercicios de movilidad:', error);
+    logger.error("Error seleccionando ejercicios de movilidad:");
     return createDefaultMobilityExercises(count, startOrder);
   }
 };
@@ -215,7 +215,7 @@ const selectExercisesForMuscleGroup = async (
     });
     
     if (exercises.length === 0) {
-      logger.warn(`No se encontraron ejercicios para el grupo muscular: ${muscleGroup}`);
+      logger.warn("Diagnostic src/services/exerciseSelectionService.ts:218");
       return createFallbackExercises(muscleGroup, count, rules, nivel);
     }
     
@@ -235,7 +235,7 @@ const selectExercisesForMuscleGroup = async (
     );
     
   } catch (error) {
-    logger.error(`Error seleccionando ejercicios para ${muscleGroup}:`, error);
+    logger.error("Diagnostic src/services/exerciseSelectionService.ts:238");
     return createFallbackExercises(muscleGroup, count, rules, nivel);
   }
 };
@@ -303,7 +303,7 @@ const selectFinisherExercises = async (count: number, startOrder: number): Promi
       })
     );
   } catch (error) {
-    logger.error('Error seleccionando ejercicios finisher:', error);
+    logger.error("Error seleccionando ejercicios finisher:");
     return createDefaultFinisherExercises(count, startOrder);
   }
 };

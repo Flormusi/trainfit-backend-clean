@@ -1,9 +1,9 @@
 import cron from 'node-cron';
-import { PrismaClient } from '@prisma/client';
+
 import { EmailService } from './emailService';
 import { NotificationService } from './notificationService';
 
-const prisma = new PrismaClient();
+import prisma from '../utils/prisma';
 
 export class CronService {
   
@@ -11,7 +11,7 @@ export class CronService {
    * Inicializar todos los trabajos cron
    */
   static initializeCronJobs() {
-    console.log('🕐 Inicializando trabajos cron...');
+
     
     // Ejecutar verificación de pagos vencidos todos los días a las 9:00 AM
     this.schedulePaymentReminders();
@@ -22,7 +22,7 @@ export class CronService {
     // Generar reportes mensuales el último día de cada mes a las 20:00
     this.scheduleMonthlyReports();
 
-    console.log('✅ Trabajos cron inicializados correctamente');
+
   }
 
   /**
@@ -31,12 +31,12 @@ export class CronService {
    */
   private static schedulePaymentReminders() {
     cron.schedule('0 9 * * *', async () => {
-      console.log('🔔 Ejecutando verificación de recordatorios de pago...');
+
       
       try {
         await this.checkAndSendPaymentReminders();
       } catch (error) {
-        console.error('Error en verificación de pagos:', error);
+        console.error("Error en verificación de pagos:");
       }
     }, {
       timezone: 'America/Argentina/Buenos_Aires'
@@ -49,12 +49,12 @@ export class CronService {
    */
   private static scheduleNotificationCleanup() {
     cron.schedule('0 2 * * 0', async () => {
-      console.log('🧹 Ejecutando limpieza de notificaciones antiguas...');
+
       
       try {
         await NotificationService.cleanupOldNotifications();
       } catch (error) {
-        console.error('Error en limpieza de notificaciones:', error);
+        console.error("Error en limpieza de notificaciones:");
       }
     }, {
       timezone: 'America/Argentina/Buenos_Aires'
@@ -117,14 +117,14 @@ export class CronService {
         }
       });
 
-      console.log(`📊 Encontradas ${subscriptionsNeedingReminders.length} suscripciones que necesitan recordatorios`);
+
 
       for (const subscription of subscriptionsNeedingReminders) {
         await this.processPaymentReminder(subscription);
       }
 
     } catch (error) {
-      console.error('Error verificando recordatorios de pago:', error);
+      console.error("Error verificando recordatorios de pago:");
     }
   }
 
@@ -169,7 +169,7 @@ export class CronService {
       });
 
       if (existingNotificationToday) {
-        console.log(`⏭️  Recordatorio ya enviado hoy para usuario ${user.email}`);
+
         return;
       }
 
@@ -214,11 +214,11 @@ export class CronService {
           });
         }
 
-        console.log(`✅ Recordatorio enviado a ${user.email} (${reminderType})`);
+
       }
 
     } catch (error) {
-      console.error(`Error procesando recordatorio para suscripción ${subscription.id}:`, error);
+      console.error("Diagnostic src/services/cronService.ts:221");
     }
   }
 
@@ -412,9 +412,9 @@ export class CronService {
    * Método manual para probar recordatorios (solo para desarrollo)
    */
   static async testPaymentReminders(): Promise<void> {
-    console.log('🧪 Ejecutando prueba de recordatorios de pago...');
+
     await this.checkAndSendPaymentReminders();
-    console.log('✅ Prueba de recordatorios completada');
+
   }
 
   /**
@@ -428,7 +428,7 @@ export class CronService {
       tomorrow.setDate(tomorrow.getDate() + 1);
       // Es el último día del mes si mañana es día 1
       if (tomorrow.getDate() === 1) {
-        console.log('📊 Generando reportes mensuales de RPE...');
+
         await this.generateMonthlyReports(now.getMonth() + 1, now.getFullYear());
       }
     }, { timezone: 'America/Argentina/Buenos_Aires' });
@@ -530,7 +530,7 @@ export class CronService {
           subject: `📊 Reporte de rendimiento ${monthNames[month]} ${year} — TrainFit`,
           html
         });
-        console.log(`✅ Reporte mensual enviado a ${trainer.email}`);
+
       }
     }
   }

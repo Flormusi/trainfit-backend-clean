@@ -1,12 +1,12 @@
 import express from 'express';
-import { PrismaClient } from '@prisma/client';
+
 import { authenticateToken } from '../middleware/authenticateToken';
 import { CronService } from '../services/cronService';
 import { EmailService } from '../services/emailService';
 import { NotificationService } from '../services/notificationService';
 
 const router = express.Router();
-const prisma = new PrismaClient();
+import prisma from '../utils/prisma';
 
 // Enviar recordatorio de pago manual (para entrenadores)
 router.post('/send-manual-reminder/:clientId', authenticateToken, async (req: any, res) => {
@@ -94,7 +94,7 @@ router.post('/send-manual-reminder/:clientId', authenticateToken, async (req: an
     }
 
   } catch (error) {
-    console.error('Error enviando recordatorio manual:', error);
+    console.error("Error enviando recordatorio manual:");
     res.status(500).json({
       success: false,
       message: 'Error interno del servidor'
@@ -121,7 +121,7 @@ router.post('/test-automatic-reminders', authenticateToken, async (req: any, res
     });
 
   } catch (error) {
-    console.error('Error en prueba de recordatorios:', error);
+    console.error("Error en prueba de recordatorios:");
     res.status(500).json({
       success: false,
       message: 'Error ejecutando prueba de recordatorios'
@@ -169,7 +169,7 @@ router.get('/notifications', authenticateToken, async (req: any, res) => {
     });
 
   } catch (error) {
-    console.error('Error obteniendo notificaciones:', error);
+    console.error("Error obteniendo notificaciones:");
     res.status(500).json({
       success: false,
       message: 'Error obteniendo notificaciones'
@@ -208,7 +208,7 @@ router.patch('/notifications/:notificationId/read', authenticateToken, async (re
     });
 
   } catch (error) {
-    console.error('Error marcando notificación como leída:', error);
+    console.error("Error marcando notificación como leída:");
     res.status(500).json({
       success: false,
       message: 'Error marcando notificación como leída'
@@ -237,7 +237,7 @@ router.patch('/notifications/mark-all-read', authenticateToken, async (req: any,
     });
 
   } catch (error) {
-    console.error('Error marcando todas las notificaciones como leídas:', error);
+    console.error("Error marcando todas las notificaciones como leídas:");
     res.status(500).json({
       success: false,
       message: 'Error marcando notificaciones como leídas'
@@ -287,7 +287,7 @@ router.post('/create-test-subscription/:clientId', authenticateToken, async (req
     });
 
   } catch (error) {
-    console.error('Error creando suscripción de prueba:', error);
+    console.error("Error creando suscripción de prueba:");
     res.status(500).json({
       success: false,
       message: 'Error creando suscripción de prueba'

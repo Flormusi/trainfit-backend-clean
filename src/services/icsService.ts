@@ -79,10 +79,10 @@ export class ICSService {
     return new Promise((resolve, reject) => {
       createEvent(eventAttributes, (error, value) => {
         if (error) {
-          console.error('❌ Error generando archivo .ics:', error);
+          console.error("❌ Error generando archivo .ics:");
           reject(error);
         } else {
-          console.log(`✅ Archivo .ics generado para evento: ${event.title}`);
+
           resolve(value);
         }
       });
@@ -99,7 +99,7 @@ export class ICSService {
       try {
         results[event.id] = await this.generateICSFile(event, options);
       } catch (error) {
-        console.error(`❌ Error generando .ics para evento ${event.id}:`, error);
+        console.error("Diagnostic src/services/icsService.ts:102");
         throw error;
       }
     }
@@ -140,7 +140,7 @@ export class ICSService {
     
     for (const field of requiredFields) {
       if (!event[field as keyof TrainingEvent]) {
-        console.error(`❌ Campo requerido faltante: ${field}`);
+        console.error("Diagnostic src/services/icsService.ts:143");
         return false;
       }
     }

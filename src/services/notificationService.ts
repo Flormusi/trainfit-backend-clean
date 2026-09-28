@@ -1,6 +1,6 @@
-import { PrismaClient } from '@prisma/client';
 
-const prisma = new PrismaClient();
+
+import prisma from '../utils/prisma';
 
 export interface CreateNotificationData {
   userId: string;
@@ -26,10 +26,10 @@ export class NotificationService {
         }
       });
       
-      console.log('Notificación creada:', notification);
+
       return notification;
     } catch (error) {
-      console.error('Error creando notificación:', error);
+      console.error("Error creando notificación:");
       throw error;
     }
   }
@@ -100,7 +100,7 @@ export class NotificationService {
       
       return notifications;
     } catch (error) {
-      console.error('Error obteniendo notificaciones no leídas:', error);
+      console.error("Error obteniendo notificaciones no leídas:");
       throw error;
     }
   }
@@ -120,7 +120,7 @@ export class NotificationService {
       
       return { success: true, message: 'Todas las notificaciones marcadas como leídas' };
     } catch (error) {
-      console.error('Error marcando notificaciones como leídas:', error);
+      console.error("Error marcando notificaciones como leídas:");
       throw error;
     }
   }
@@ -140,10 +140,10 @@ export class NotificationService {
         }
       });
       
-      console.log(`Eliminadas ${deletedCount.count} notificaciones antiguas`);
+
       return deletedCount;
     } catch (error) {
-      console.error('Error limpiando notificaciones antiguas:', error);
+      console.error("Error limpiando notificaciones antiguas:");
       throw error;
     }
   }

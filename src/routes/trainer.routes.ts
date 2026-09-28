@@ -207,8 +207,8 @@ router.get('/clients/:clientId/rpe-logs', protect, requestMiddleware, authorize(
 });
 
 // Datos de cobro del trainer
-import { PrismaClient } from '@prisma/client';
-const prisma = new PrismaClient();
+
+import prisma from '../utils/prisma';
 
 router.get('/payment-info', protect, requestMiddleware, authorize([Role.TRAINER]), async (req: any, res: any) => {
   const profile = await prisma.trainerProfile.findUnique({ where: { userId: req.user.id } });

@@ -37,7 +37,7 @@ exports.error = (res, statusCode = 500, message = '', errors = null) => {
 
   // Registrar el error en la consola para depuración
   if (process.env.NODE_ENV !== 'production') {
-    console.error(`[ERROR] ${statusCode}: ${message}`, errors || '');
+    console.error('API error response');
   }
 
   return res.status(statusCode).json(response);

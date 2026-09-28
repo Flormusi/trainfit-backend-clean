@@ -39,8 +39,8 @@ router.put('/notifications/:notificationId/read', protect, authorize([Role.CLIEN
 router.put('/:userId/notifications/mark-all-read', protect, authorize([Role.CLIENT]), markAllNotificationsAsRead);
 
 // DELETE de notificaciones
-import { PrismaClient } from '@prisma/client';
-const prismaForNotif = new PrismaClient();
+
+import prismaForNotif from '../utils/prisma';
 router.delete('/notifications/clear', protect, authorize([Role.CLIENT]), async (req: Request, res: Response) => {
   const user = (req as any).user;
   try {
@@ -72,7 +72,7 @@ router.put('/:userId/profile', protect, authorize([Role.CLIENT]), updateClientPr
 // updateClientProfile
 // Middleware para manejar errores de multer
 const handleMulterError = (err: any, req: Request, res: Response, next: NextFunction) => {
-  console.log('🚨 Error en middleware de multer:', err);
+
   if (err instanceof Error) {
     if (err.message === 'Solo se permiten archivos de imagen') {
       return res.status(400).json({ message: 'Solo se permiten archivos de imagen' });
@@ -85,13 +85,13 @@ const handleMulterError = (err: any, req: Request, res: Response, next: NextFunc
 };
 
 router.post('/:userId/profile/upload-image', protect, authorize([Role.CLIENT]), (req: Request, res: Response, next: NextFunction) => {
-  console.log('🎯 Llegó a la ruta de upload-image');
+
   upload.single('profileImage')(req, res, (err: any) => {
     if (err) {
-      console.log('❌ Error en multer:', err);
+
       return handleMulterError(err, req, res, next);
     }
-    console.log('✅ Multer procesó correctamente, pasando al controlador');
+
     uploadProfileImage(req, res);
   });
 });

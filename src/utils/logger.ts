@@ -7,8 +7,7 @@
 import winston from 'winston';
 import { format, transports } from 'winston';
 import path from 'path';
-import { Request, Response, NextFunction } from 'express';
-import { RequestWithUser } from '../types/express';
+import { requestLogging } from '../middleware/requestLogging';
 
 // Configuración de formatos
 const logFormat = format.combine(
@@ -76,33 +75,7 @@ const logger = winston.createLogger({
  * @param {Response} res - Objeto de respuesta Express
  * @param {NextFunction} next - Función next de Express
  */
-const requestLogger = (req: Request, res: Response, next: NextFunction): void => {
-  const startTime = new Date();
-  
-  // Registrar al inicio de la solicitud
-  logger.info('Solicitud recibida', {
-    method: req.method,
-    url: req.originalUrl,
-    ip: req.ip,
-    userId: (req as RequestWithUser).user?.id || 'no autenticado'
-  });
-
-  // Capturar cuando la respuesta se complete
-  res.on('finish', () => {
-    const duration = new Date().getTime() - startTime.getTime();
-    const logLevel = res.statusCode >= 400 ? 'warn' : 'info';
-    
-    logger[logLevel]('Solicitud completada', {
-      method: req.method,
-      url: req.originalUrl,
-      statusCode: res.statusCode,
-      duration: `${duration}ms`,
-      userId: (req as RequestWithUser).user?.id || 'no autenticado'
-    });
-  });
-
-  next();
-};
+const requestLogger = requestLogging;
 
 interface LogMeta {
   [key: string]: any;
@@ -113,22 +86,14 @@ interface ErrorWithStack extends Error {
 }
 
 // Funciones de conveniencia para logging
-const error = (message: string, meta: LogMeta = {}) => logger.error(message, meta);
-const warn = (message: string, meta: LogMeta = {}) => logger.warn(message, meta);
-const info = (message: string, meta: LogMeta = {}) => logger.info(message, meta);
-const debug = (message: string, meta: LogMeta = {}) => logger.debug(message, meta);
+const error = (message: string, meta: LogMeta = {}) => logger.error('Application error');
+const warn = (message: string, meta: LogMeta = {}) => logger.warn('Application warning');
+const info = (message: string, meta: LogMeta = {}) => logger.info('Application event');
+const debug = (message: string, meta: LogMeta = {}) => logger.debug('Application debug event');
 
-// Método para registrar errores con stack trace
+// Arbitrary error messages, stacks and metadata may contain credentials.
 const logError = (message: string, error: ErrorWithStack, meta: LogMeta = {}) => {
-  logger.error(message, {
-    ...meta,
-    error: {
-      message: error.message,
-      stack: error.stack,
-      name: error.name,
-      code: error.code
-    }
-  });
+  logger.error('Application error');
 };
 
 // Exportar el logger y middleware

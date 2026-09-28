@@ -1,56 +1,32 @@
 
 import bcrypt from 'bcryptjs';
-import { PrismaClient, Role, Prisma } from '@prisma/client';
+import { Role, Prisma } from '@prisma/client';
 import { Request, Response } from 'express';
 import { CustomError } from '../types/error';
 import nodemailer from 'nodemailer';
 import crypto from 'crypto';
 
-const prisma = new PrismaClient();
+import prisma from '../utils/prisma';
+import { lookupRoutineExercises } from '../services/exerciseLookup';
 
-// Helper function to enrich routine exercises with complete exercise data
+const mergeExerciseData = (exercise: any, exerciseData: any) => exerciseData ? ({
+  ...exercise,
+  imageUrl: exerciseData.imageUrl,
+  description: exerciseData.description,
+  type: exerciseData.type,
+  equipment: exerciseData.equipment,
+  difficulty: exerciseData.difficulty,
+  muscles: exerciseData.muscles
+}) : exercise;
+
 const enrichRoutineExercises = async (routines: any[]) => {
-  const enrichedRoutines = await Promise.all(
-    routines.map(async (routine) => {
-      if (routine.exercises && Array.isArray(routine.exercises)) {
-        const enrichedExercises = await Promise.all(
-          routine.exercises.map(async (exercise: any) => {
-            // Try to find the exercise in the Exercise table by name
-            const exerciseData = await prisma.exercise.findFirst({
-              where: {
-                name: { equals: exercise.name || exercise.exerciseId, mode: 'insensitive' }
-              }
-            });
-
-            // If found, merge the exercise data with the routine exercise data
-            if (exerciseData) {
-              return {
-                ...exercise,
-                imageUrl: exerciseData.imageUrl,
-                description: exerciseData.description,
-                type: exerciseData.type,
-                equipment: exerciseData.equipment,
-                difficulty: exerciseData.difficulty,
-                muscles: exerciseData.muscles
-              };
-            }
-
-            // If not found, return the original exercise
-            return exercise;
-          })
-        );
-
-        return {
-          ...routine,
-          exercises: enrichedExercises
-        };
-      }
-
-      return routine;
-    })
-  );
-
-  return enrichedRoutines;
+  const matches = await lookupRoutineExercises(routines, { skipComplete: false, nameMode: 'equals' });
+  return routines.map(routine => ({
+    ...routine,
+    exercises: Array.isArray(routine.exercises)
+      ? routine.exercises.map((exercise: any) => mergeExerciseData(exercise, matches.get(exercise)))
+      : routine.exercises
+  }));
 };
 
 // Añadir cliente (hecho por entrenador)
@@ -179,7 +155,7 @@ export const addClientByTrainer = async (req: Request, res: Response): Promise<v
       inviteUrl: `${frontendUrl}/join/${inviteToken}`
     });
   } catch (error) {
-    console.error('Error adding client by trainer:', error);
+    console.error("Error adding client by trainer:");
     res.status(500).json({ message: 'Internal server error while adding client.' });
   }
 };
@@ -206,7 +182,7 @@ export const recordProgress = async (req: Request, res: Response): Promise<void>
 
     res.status(201).json(progress);
   } catch (error) {
-    console.error('Error recording progress:', error);
+    console.error("Error recording progress:");
     res.status(500).json({ message: 'Internal server error while recording progress.' });
   }
 };
@@ -253,7 +229,7 @@ export const getClientById = async (req: Request, res: Response): Promise<void> 
     const { password: _, ...clientData } = client;
     res.status(200).json({ data: clientData });
   } catch (error) {
-    console.error('Error fetching client by ID:', error);
+    console.error("Error fetching client by ID:");
     res.status(500).json({ message: 'Internal server error' });
   }
 };
@@ -309,7 +285,7 @@ export const deleteClient = async (req: Request, res: Response): Promise<void> =
 
     res.status(200).json({ message: 'Cliente eliminado exitosamente' });
   } catch (error) {
-    console.error('Error deleting client:', error);
+    console.error("Error deleting client:");
     res.status(500).json({ message: 'Error interno del servidor al eliminar el cliente' });
   }
 };
@@ -378,7 +354,7 @@ export const getClientRoutines = async (req: Request, res: Response) => {
         }
       });
 
-      console.log('Found routines for client:', user.id, 'Total:', allRoutines.length);
+
       
       // Enrich exercises with complete data
       const enrichedRoutines = await enrichRoutineExercises(allRoutines);
@@ -481,7 +457,7 @@ export const getClientRoutines = async (req: Request, res: Response) => {
           }
         });
 
-        console.log('Found routines for client:', clientId, 'Total:', allRoutines.length);
+
         
         // Enrich exercises with complete data
         const enrichedRoutines = await enrichRoutineExercises(allRoutines);
@@ -512,7 +488,7 @@ export const getClientRoutines = async (req: Request, res: Response) => {
     // Si no es ni cliente ni entrenador
     return res.status(403).json({ message: 'Unauthorized: invalid role for this operation.' });
   } catch (error) {
-    console.error('Error fetching client routines:', error);
+    console.error("Error fetching client routines:");
     res.status(500).json({ message: 'Internal server error' });
   }
 };
@@ -560,7 +536,7 @@ export const getPaymentStatus = async (req: Request, res: Response): Promise<voi
       }
     });
   } catch (error) {
-    console.error('Error fetching payment status:', error);
+    console.error("Error fetching payment status:");
     res.status(500).json({ message: 'Internal server error' });
   }
 };
@@ -605,7 +581,7 @@ export const deleteAssignedRoutine = async (req: Request, res: Response): Promis
       message: 'Rutina eliminada exitosamente' 
     });
   } catch (error) {
-    console.error('Error deleting assigned routine:', error);
+    console.error("Error deleting assigned routine:");
     res.status(500).json({ 
       success: false, 
       message: 'Error interno del servidor al eliminar la rutina' 
@@ -694,7 +670,7 @@ export const sendMonthlyRoutineEmail = async (req: Request, res: Response): Prom
       message: 'Rutina enviada por email exitosamente' 
     });
   } catch (error) {
-    console.error('Error sending monthly routine email:', error);
+    console.error("Error sending monthly routine email:");
     res.status(500).json({ 
       success: false,
       message: 'Error al enviar el email. Por favor, inténtalo de nuevo más tarde.'
@@ -765,7 +741,7 @@ export const saveClientWeekWeights = async (req: Request, res: Response): Promis
 
     res.json({ success: true });
   } catch (error) {
-    console.error('Error saving week weights:', error);
+    console.error("Error saving week weights:");
     res.status(500).json({ success: false, message: 'Error al guardar los pesos' });
   }
 };

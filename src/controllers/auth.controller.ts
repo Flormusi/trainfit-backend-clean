@@ -1,10 +1,10 @@
 import { Request, Response } from 'express';
-import { PrismaClient, Role, User } from '@prisma/client';
+import { Role, User } from '@prisma/client';
 import bcrypt from 'bcryptjs';
 import jwt, { SignOptions } from 'jsonwebtoken';
 import crypto from 'crypto';
 
-const prisma = new PrismaClient();
+import prisma from '../utils/prisma';
 
 interface RegisterRequestBody {
   name: string;
@@ -118,7 +118,7 @@ export const register = async (req: Request, res: Response): Promise<void> => {
 
     sendTokenResponse(user, 201, res);
   } catch (error: any) {
-    console.error('Register error:', error);
+    console.error("Register error:");
     res.status(500).json({ success: false, message: error.message || 'Server error' });
   }
 };
@@ -126,12 +126,12 @@ export const register = async (req: Request, res: Response): Promise<void> => {
 // LOGIN
 export const login = async (req: Request, res: Response): Promise<void> => {
   try {
-    console.log('Login request received:', req.body);
+
     const { email, password: plainPassword } = req.body as LoginRequestBody;
-    console.log('Parsed credentials - email:', email);
+
 
     if (!email || !plainPassword) {
-      console.log('Login attempt failed: Missing credentials');
+
       res.status(400).json({ success: false, message: 'Por favor, proporciona email y contraseña' });
       return;
     }
@@ -149,18 +149,18 @@ export const login = async (req: Request, res: Response): Promise<void> => {
     });
 
     if (!user) {
-      console.log('Login attempt failed: User not found -', email);
+
       res.status(401).json({ success: false, message: 'Credenciales inválidas', error: 'Usuario o contraseña incorrectos' });
       return;
     }
 
     const isMatch = await bcrypt.compare(plainPassword, user.password);
     if (!isMatch) {
-      console.log('Login attempt failed: Invalid password for user -', email);
+
       res.status(401).json({ success: false, message: 'Credenciales inválidas', error: 'Usuario o contraseña incorrectos' });
       return;
     }
-    console.log('Login successful for user:', email);
+
 
     const jwtSecret = process.env.JWT_SECRET;
     const jwtExpireOption: string = process.env.JWT_EXPIRE || '30d';
@@ -197,14 +197,9 @@ export const login = async (req: Request, res: Response): Promise<void> => {
          user: userData
        });
   } catch (error: any) {
-    console.error('Login error:', error);
-    console.error('Error stack:', error.stack);
-    console.error('Error details:', {
-      name: error.name,
-      message: error.message,
-      code: error.code,
-      meta: error.meta
-    });
+    console.error("Login error:");
+    console.error("Error stack:");
+    console.error("Error details:");
     res.status(500).json({
       success: false,
       message: 'Error en el servidor. Por favor, inténtalo de nuevo más tarde.',
@@ -345,8 +340,8 @@ export const googleTokenExchange = async (req: Request, res: Response): Promise<
     const data = await response.json();
 
     if (!response.ok) {
-      console.error('Google token exchange error:', JSON.stringify(data));
-      console.error('client_id present:', !!process.env.GOOGLE_CLIENT_ID, 'client_secret present:', !!process.env.GOOGLE_CLIENT_SECRET);
+      console.error("Google token exchange error:");
+      console.error("client_id present:");
       res.status(response.status).json({ message: 'Error al obtener tokens de Google', error: data });
       return;
     }

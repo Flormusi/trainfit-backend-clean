@@ -48,7 +48,7 @@ export const error = (res: Response, statusCode = 500, message = '', errors: any
 
   // Registrar el error en la consola para depuración
   if (process.env.NODE_ENV !== 'production') {
-    console.error(`[ERROR] ${statusCode}: ${message}`, errors || '');
+    console.error("Diagnostic src/utils/responseHandler.ts:51");
   }
 
   return res.status(statusCode).json(response);

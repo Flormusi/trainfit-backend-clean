@@ -1,7 +1,7 @@
 import { Request, Response } from 'express';
-import { PrismaClient } from '@prisma/client';
 
-const prisma = new PrismaClient();
+
+import prisma from '../utils/prisma';
 
 // ✅ Get client progress
 export const getClientProgress = async (req: Request, res: Response) => {
@@ -11,7 +11,7 @@ export const getClientProgress = async (req: Request, res: Response) => {
       return;
     }
 
-    console.log('🔎 Buscando progreso para cliente:', req.user.id);
+
 
     const progress = await prisma.progress.findMany({
       where: { userId: req.user.id },
@@ -26,7 +26,7 @@ export const getClientProgress = async (req: Request, res: Response) => {
       data: progress
     });
   } catch (error: any) {
-    console.error('💥 Error al obtener progreso:', error.message || error);
+    console.error("💥 Error al obtener progreso:");
     res.status(500).json({
       success: false,
       message: error.message || 'Server error'

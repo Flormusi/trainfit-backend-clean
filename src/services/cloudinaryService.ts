@@ -18,14 +18,7 @@ if (!fs.existsSync(profileImagesDir)) {
 
 export const uploadToCloudinary = async (file: Express.Multer.File): Promise<string> => {
   try {
-    console.log('🖼️ Iniciando subida de imagen:', {
-      originalname: file.originalname,
-      mimetype: file.mimetype,
-      size: file.size,
-      path: file.path,
-      NODE_ENV: process.env.NODE_ENV,
-      CLOUDINARY_CLOUD_NAME: process.env.CLOUDINARY_CLOUD_NAME
-    });
+
 
     // Siempre usar Cloudinary (dev y producción)
     const result = await cloudinary.uploader.upload(file.path, {
@@ -39,7 +32,7 @@ export const uploadToCloudinary = async (file: Express.Multer.File): Promise<str
     
     return result.secure_url;
   } catch (error) {
-    console.error('Error uploading image:', error);
+    console.error("Error uploading image:");
     throw new Error('Error al subir imagen');
   }
 };

@@ -1,12 +1,12 @@
 import { Request, Response } from 'express';
-import { PrismaClient } from '@prisma/client';
+
 import { RequestWithUser } from '../types/express';
 import { selectExercisesForDay, ExerciseSelectionParams } from '../services/exerciseSelectionService';
 import { logger } from '../utils/logger';
 import { routineTemplates } from '../data/routineTemplates';
 import { extendedRoutineTemplates } from '../data/routineTemplatesExtended';
 
-const prisma = new PrismaClient();
+import prisma from '../utils/prisma';
 
 // Combinar todas las rutinas prediseñadas
 const allPresetTemplates = [...routineTemplates, ...extendedRoutineTemplates];
@@ -120,7 +120,7 @@ export const getRoutineTemplates = async (req: Request, res: Response) => {
       data: templates
     });
   } catch (error) {
-    console.error('Error fetching routine templates:', error);
+    console.error("Error fetching routine templates:");
     res.status(500).json({
       success: false,
       message: 'Error al obtener las plantillas de rutinas'
@@ -158,7 +158,7 @@ export const getRoutineTemplateById = async (req: Request, res: Response) => {
       data: template
     });
   } catch (error) {
-    console.error('Error fetching routine template:', error);
+    console.error("Error fetching routine template:");
     res.status(500).json({
       success: false,
       message: 'Error al obtener la plantilla'
@@ -219,7 +219,7 @@ export const createRoutineTemplate = async (req: RequestWithUser, res: Response)
       message: 'Plantilla creada exitosamente'
     });
   } catch (error) {
-    console.error('Error creating routine template:', error);
+    console.error("Error creating routine template:");
     res.status(500).json({
       success: false,
       message: 'Error al crear la plantilla'
@@ -302,7 +302,7 @@ export const updateRoutineTemplate = async (req: RequestWithUser, res: Response)
       message: 'Plantilla actualizada exitosamente'
     });
   } catch (error) {
-    console.error('Error updating routine template:', error);
+    console.error("Error updating routine template:");
     res.status(500).json({
       success: false,
       message: 'Error al actualizar la plantilla'
@@ -355,7 +355,7 @@ export const deleteRoutineTemplate = async (req: RequestWithUser, res: Response)
       message: 'Plantilla eliminada exitosamente'
     });
   } catch (error) {
-    console.error('Error deleting routine template:', error);
+    console.error("Error deleting routine template:");
     res.status(500).json({
       success: false,
       message: 'Error al eliminar la plantilla'
@@ -418,7 +418,7 @@ export const duplicateRoutineTemplate = async (req: RequestWithUser, res: Respon
       message: 'Plantilla duplicada exitosamente'
     });
   } catch (error) {
-    console.error('Error duplicating routine template:', error);
+    console.error("Error duplicating routine template:");
     res.status(500).json({
       success: false,
       message: 'Error al duplicar la plantilla'
@@ -476,13 +476,7 @@ export const generateRoutineTemplate = async (req: RequestWithUser, res: Respons
       });
     }
     
-    logger.info('Generando plantilla de rutina', {
-      objetivo,
-      dias,
-      nivel,
-      genero,
-      userId: req.user?.id
-    });
+    logger.info("Generando plantilla de rutina");
     
     // Generar ejercicios para cada día
     const template = {
@@ -539,10 +533,10 @@ export const generateRoutineTemplate = async (req: RequestWithUser, res: Respons
           }))
         });
         
-        logger.info(`Día ${day} generado con ${exercises.length} ejercicios`);
+        logger.info("Diagnostic src/controllers/routineTemplate.controller.ts:542");
         
       } catch (dayError) {
-        logger.error(`Error generando día ${day}:`, dayError);
+        logger.error("Diagnostic src/controllers/routineTemplate.controller.ts:545");
         
         // Si falla un día, crear un día con ejercicios por defecto
         template.days.push({
@@ -586,17 +580,12 @@ export const generateRoutineTemplate = async (req: RequestWithUser, res: Respons
       }
     };
     
-    logger.info('Plantilla generada exitosamente', {
-      objetivo,
-      dias,
-      totalExercises: stats.totalExercises,
-      userId: req.user?.id
-    });
+    logger.info("Plantilla generada exitosamente");
     
     res.status(200).json(response);
     
   } catch (error) {
-    logger.error('Error generando plantilla de rutina:', error);
+    logger.error("Error generando plantilla de rutina:");
     
     res.status(500).json({
       success: false,
@@ -652,7 +641,7 @@ export const getPresetRoutine = async (req: Request, res: Response) => {
       data: formattedTemplate
     });
   } catch (error) {
-    console.error('Error getting preset routine:', error);
+    console.error("Error getting preset routine:");
     res.status(500).json({
       success: false,
       message: 'Error al obtener la rutina prediseñada'

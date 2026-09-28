@@ -74,33 +74,7 @@ const logger = winston.createLogger({
  * @param {Object} res - Objeto de respuesta Express
  * @param {Function} next - Función next de Express
  */
-const requestLogger = (req, res, next) => {
-  const startTime = new Date();
-  
-  // Registrar al inicio de la solicitud
-  logger.info('Solicitud recibida', {
-    method: req.method,
-    url: req.originalUrl,
-    ip: req.ip,
-    userId: req.user?.id || 'no autenticado'
-  });
-
-  // Capturar cuando la respuesta se complete
-  res.on('finish', () => {
-    const duration = new Date() - startTime;
-    const logLevel = res.statusCode >= 400 ? 'warn' : 'info';
-    
-    logger[logLevel]('Solicitud completada', {
-      method: req.method,
-      url: req.originalUrl,
-      statusCode: res.statusCode,
-      duration: `${duration}ms`,
-      userId: req.user?.id || 'no autenticado'
-    });
-  });
-
-  next();
-};
+const { requestLogging: requestLogger } = require('../middleware/requestLogging');
 
 // Exportar el logger y middleware
 module.exports = {
@@ -108,21 +82,13 @@ module.exports = {
   requestLogger,
   
   // Métodos de conveniencia
-  error: (message, meta = {}) => logger.error(message, meta),
-  warn: (message, meta = {}) => logger.warn(message, meta),
-  info: (message, meta = {}) => logger.info(message, meta),
-  debug: (message, meta = {}) => logger.debug(message, meta),
+  error: (message, meta = {}) => logger.error('Application error'),
+  warn: (message, meta = {}) => logger.warn('Application warning'),
+  info: (message, meta = {}) => logger.info('Application event'),
+  debug: (message, meta = {}) => logger.debug('Application debug event'),
   
   // Método para registrar errores con stack trace
   logError: (message, error, meta = {}) => {
-    logger.error(message, {
-      ...meta,
-      error: {
-        message: error.message,
-        stack: error.stack,
-        name: error.name,
-        code: error.code
-      }
-    });
+    logger.error('Application error');
   }
 };

@@ -1,12 +1,21 @@
+import { lookupExercises } from '../services/exerciseLookup';
 import { Request, Response } from 'express';
-import { PrismaClient } from '@prisma/client';
 
-const prisma = new PrismaClient();
+
+import prisma from '../utils/prisma';
 
 // Función auxiliar para enriquecer ejercicios con datos completos
-const enrichRoutineExercises = async (exercises: any[]): Promise<any[]> => {
+const enrichRoutineExercises = async (exercises: any[], trainerId: string): Promise<any[]> => {
   if (!exercises || !Array.isArray(exercises)) {
     return [];
+  }
+
+  let matches;
+  try {
+    matches = await lookupExercises(exercises, trainerId);
+  } catch {
+    console.error('Exercise lookup failed');
+    return exercises;
   }
 
   const enrichedExercises = await Promise.all(
@@ -17,27 +26,7 @@ const enrichRoutineExercises = async (exercises: any[]): Promise<any[]> => {
           return exercise;
         }
 
-        // Buscar el ejercicio completo en la base de datos
-        let fullExercise = null;
-        
-        // Buscar por exerciseId si existe
-        if (exercise.exerciseId) {
-          fullExercise = await prisma.exercise.findUnique({
-            where: { id: exercise.exerciseId }
-          });
-        }
-        
-        // Si no se encontró por ID, buscar por nombre
-        if (!fullExercise && exercise.name) {
-          fullExercise = await prisma.exercise.findFirst({
-            where: { 
-              name: {
-                contains: exercise.name,
-                mode: 'insensitive'
-              }
-            }
-          });
-        }
+        const fullExercise = matches.get(exercise);
 
         // Combinar datos del ejercicio original con los datos completos encontrados
         return {
@@ -50,7 +39,7 @@ const enrichRoutineExercises = async (exercises: any[]): Promise<any[]> => {
           muscles: fullExercise?.muscles || exercise.muscles || null
         };
       } catch (error) {
-        console.error('Error enriching exercise:', exercise.name, error);
+        console.error("Error enriching exercise:");
         return exercise; // Devolver el ejercicio original si hay error
       }
     })
@@ -81,7 +70,7 @@ export const getProfile = async (req: Request, res: Response): Promise<void> => 
       data: clientProfile
     });
   } catch (error: any) {
-    console.error('Error al obtener el perfil:', error);
+    console.error("Error al obtener el perfil:");
     res.status(500).json({
       success: false,
       message: error.message || 'Error del servidor'
@@ -147,7 +136,7 @@ export const createOrUpdateProfile = async (req: Request, res: Response): Promis
       message: 'Perfil actualizado correctamente'
     });
   } catch (error: any) {
-    console.error('Error al actualizar el perfil:', error);
+    console.error("Error al actualizar el perfil:");
     res.status(500).json({
       success: false,
       message: error.message || 'Error del servidor'
@@ -163,7 +152,7 @@ export const getAssignedRoutines = async (req: Request, res: Response): Promise<
       return;
     }
 
-    console.log('🔍 Buscando rutinas para el usuario:', req.user.id);
+
 
     // Buscar rutinas asignadas directamente
     const directRoutines = await prisma.routine.findMany({
@@ -217,22 +206,18 @@ export const getAssignedRoutines = async (req: Request, res: Response): Promise<
     const enrichedRoutines = await Promise.all(
       uniqueRoutines.map(async (routine) => ({
         ...routine,
-        exercises: await enrichRoutineExercises(routine.exercises as any[])
+        exercises: await enrichRoutineExercises(routine.exercises as any[], routine.trainerId)
       }))
     );
 
-    console.log('✅ Rutinas encontradas:', {
-      directas: directRoutines.length,
-      porAsignacion: assignmentRoutines.length,
-      total: enrichedRoutines.length
-    });
+
 
     res.status(200).json({
       success: true,
       data: enrichedRoutines
     });
   } catch (error: any) {
-    console.error('❌ Error al obtener rutinas:', error);
+    console.error("❌ Error al obtener rutinas:");
     res.status(500).json({
       success: false,
       message: error.message || 'Error del servidor'
@@ -256,15 +241,16 @@ export const getAssignedWorkouts = async (req: Request, res: Response): Promise<
         description: true,
         exercises: true,
         createdAt: true,
-        updatedAt: true
+        updatedAt: true,
+        trainerId: true
       }
     });
 
     // Enriquecer ejercicios con datos completos
     const enrichedRoutines = await Promise.all(
-      routines.map(async (routine) => ({
+      routines.map(async ({ trainerId, ...routine }) => ({
         ...routine,
-        exercises: await enrichRoutineExercises(routine.exercises as any[])
+        exercises: await enrichRoutineExercises(routine.exercises as any[], trainerId)
       }))
     );
 
@@ -273,7 +259,7 @@ export const getAssignedWorkouts = async (req: Request, res: Response): Promise<
       data: enrichedRoutines
     });
   } catch (error: any) {
-    console.error('Error al obtener workouts:', error);
+    console.error("Error al obtener workouts:");
     res.status(500).json({
       success: false,
       message: error.message || 'Error del servidor'

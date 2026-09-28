@@ -1,9 +1,9 @@
 import express from 'express';
-import { PrismaClient } from '@prisma/client';
+
 import { authenticateToken } from '../middleware/authenticateToken';
 
 const router = express.Router();
-const prisma = new PrismaClient();
+import prisma from '../utils/prisma';
 
 // Obtener conversaciones del usuario
 router.get('/conversations', authenticateToken, async (req, res) => {
@@ -83,7 +83,7 @@ router.get('/conversations', authenticateToken, async (req, res) => {
     
     res.json(conversationsList);
   } catch (error) {
-    console.error('Error fetching conversations:', error);
+    console.error("Error fetching conversations:");
     res.status(500).json({ message: 'Error interno del servidor' });
   }
 });
@@ -135,7 +135,7 @@ router.get('/conversation/:userId', authenticateToken, async (req, res) => {
 
     res.json(messages);
   } catch (error) {
-    console.error('Error fetching messages:', error);
+    console.error("Error fetching messages:");
     res.status(500).json({ message: 'Error interno del servidor' });
   }
 });
@@ -194,7 +194,7 @@ router.post('/send', authenticateToken, async (req, res) => {
 
     res.status(201).json(message);
   } catch (error) {
-    console.error('Error sending message:', error);
+    console.error("Error sending message:");
     res.status(500).json({ message: 'Error interno del servidor' });
   }
 });
@@ -221,7 +221,7 @@ router.patch('/:messageId/read', authenticateToken, async (req, res) => {
 
     res.json(message);
   } catch (error) {
-    console.error('Error marking message as read:', error);
+    console.error("Error marking message as read:");
     res.status(500).json({ message: 'Error interno del servidor' });
   }
 });
@@ -244,7 +244,7 @@ router.get('/unread-count', authenticateToken, async (req, res) => {
 
     res.json({ unreadCount });
   } catch (error) {
-    console.error('Error fetching unread count:', error);
+    console.error("Error fetching unread count:");
     res.status(500).json({ message: 'Error interno del servidor' });
   }
 });

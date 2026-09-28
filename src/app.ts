@@ -4,10 +4,12 @@ import cookieParser from 'cookie-parser';
 import path from 'path';
 import routes from './routes';
 import { errorHandler, notFound } from './utils/responseHandler';
+import { requestLogging } from './middleware/requestLogging';
 
 // dotenv.config(); // ELIMINAR ESTA LÍNEA
 
 const app = express();
+app.use(requestLogging);
 
 const allowedOrigins = [
   'http://localhost:5173',
@@ -44,16 +46,6 @@ app.use(cookieParser());
 app.use('/uploads', express.static(path.join(__dirname, '../uploads')));
 
 // Middleware de logging para todas las solicitudes
-app.use((req, res, next) => {
-  console.log(`\n=== SOLICITUD ENTRANTE ===`);
-  console.log(`[${new Date().toISOString()}] ${req.method} ${req.url}`);
-  console.log(`Ruta completa: ${req.originalUrl}`);
-  console.log(`Parámetros de consulta:`, req.query);
-  console.log(`Parámetros de ruta:`, req.params);
-  console.log('Headers:', req.headers);
-  console.log(`=========================\n`);
-  next();
-});
 
 // Ruta raíz
 app.get('/', (req, res) => {

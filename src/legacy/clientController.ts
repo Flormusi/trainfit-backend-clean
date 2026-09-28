@@ -1,9 +1,9 @@
 import { Request, Response } from 'express';
-import { PrismaClient } from '@prisma/client';
+
 import { uploadToCloudinary } from '../services/cloudinaryService';
 import fs from 'fs';
 
-const prisma = new PrismaClient();
+import prisma from '../utils/prisma';
 
 // Obtener notificaciones del cliente
 export const getClientNotifications = async (req: Request, res: Response) => {
@@ -47,7 +47,7 @@ export const getClientNotifications = async (req: Request, res: Response) => {
       }
     });
   } catch (error) {
-    console.error('Error fetching client notifications:', error);
+    console.error("Error fetching client notifications:");
     res.status(500).json({ error: 'Error interno del servidor' });
   }
 };
@@ -66,7 +66,7 @@ export const getUnreadNotificationsCount = async (req: Request, res: Response) =
     
     res.json({ count });
   } catch (error) {
-    console.error('Error fetching unread notifications count:', error);
+    console.error("Error fetching unread notifications count:");
     res.status(500).json({ error: 'Error interno del servidor' });
   }
 };
@@ -87,7 +87,7 @@ export const markNotificationAsRead = async (req: Request, res: Response) => {
     
     res.json({ message: 'Notificación marcada como leída', notification });
   } catch (error) {
-    console.error('Error marking notification as read:', error);
+    console.error("Error marking notification as read:");
     res.status(500).json({ error: 'Error interno del servidor' });
   }
 };
@@ -109,7 +109,7 @@ export const markAllNotificationsAsRead = async (req: Request, res: Response) =>
     
     res.json({ message: 'Todas las notificaciones marcadas como leídas' });
   } catch (error) {
-    console.error('Error marking all notifications as read:', error);
+    console.error("Error marking all notifications as read:");
     res.status(500).json({ error: 'Error interno del servidor' });
   }
 };
@@ -157,7 +157,7 @@ export const getAssignedRoutines = async (req: Request, res: Response) => {
     
     res.json({ routines: enrichedRoutines });
   } catch (error) {
-    console.error('Error fetching assigned routines:', error);
+    console.error("Error fetching assigned routines:");
     res.status(500).json({ error: 'Error interno del servidor' });
   }
 };
@@ -202,7 +202,7 @@ export const getRoutineDetails = async (req: Request, res: Response) => {
     
     res.json({ routine });
   } catch (error) {
-    console.error('Error fetching routine details:', error);
+    console.error("Error fetching routine details:");
     res.status(500).json({ error: 'Error interno del servidor' });
   }
 };
@@ -256,7 +256,7 @@ export const getClientProgress = async (req: Request, res: Response) => {
     
     res.json({ progress: progressData });
   } catch (error) {
-    console.error('Error fetching client progress:', error);
+    console.error("Error fetching client progress:");
     res.status(500).json({ error: 'Error interno del servidor' });
   }
 };
@@ -280,7 +280,7 @@ export const getClientPaymentStatus = async (req: Request, res: Response) => {
 
     res.json(paymentStatus);
   } catch (error) {
-    console.error('Error fetching payment status:', error);
+    console.error("Error fetching payment status:");
     res.status(500).json({ error: 'Error interno del servidor' });
   }
 };
@@ -353,7 +353,7 @@ export const getClientProfile = async (req: Request, res: Response) => {
       }
     });
   } catch (error) {
-    console.error('Error fetching client profile:', error);
+    console.error("Error fetching client profile:");
     res.status(500).json({ error: 'Error interno del servidor' });
   }
 };
@@ -361,28 +361,28 @@ export const getClientProfile = async (req: Request, res: Response) => {
 // Actualizar perfil del cliente (incluyendo imagen, apodo, peso, frecuencia y objetivo)
 export const updateClientProfile = async (req: Request, res: Response) => {
   try {
-    console.log('\n=== UPDATE CLIENT PROFILE REQUEST ===');
-    console.log('Params:', req.params);
-    console.log('Body:', req.body);
-    console.log('User:', req.user);
+
+
+
+
     
     const { userId } = req.params;
     const user = req.user;
     const { nickname, profileImage, weight, trainingDaysPerWeek, initialObjective } = req.body;
     
     if (!user || !user.id) {
-      console.log('❌ User not authenticated');
+
       return res.status(401).json({ message: 'User not authenticated or user ID missing' });
     }
 
     // Verificar que el usuario puede actualizar este perfil
     const targetUserId = userId || user.id;
-    console.log('Target User ID:', targetUserId);
-    console.log('Current User ID:', user.id);
-    console.log('User Role:', user.role);
+
+
+
     
     if (user.id !== targetUserId && user.role !== 'ADMIN') {
-      console.log('❌ Permission denied');
+
       return res.status(403).json({ message: 'No tienes permisos para actualizar este perfil' });
     }
 
@@ -394,17 +394,17 @@ export const updateClientProfile = async (req: Request, res: Response) => {
     if (trainingDaysPerWeek !== undefined) updateData.trainingDaysPerWeek = parseInt(trainingDaysPerWeek.toString());
     if (initialObjective !== undefined) updateData.initialObjective = initialObjective;
 
-    console.log('Update Data:', updateData);
+
 
     // Actualizar el perfil del cliente
-    console.log('Updating profile for userId:', targetUserId);
+
     const updatedProfile = await prisma.clientProfile.update({
       where: { userId: targetUserId },
       data: updateData
     });
 
-    console.log('✅ Profile updated successfully:', updatedProfile);
-    console.log('=== END UPDATE CLIENT PROFILE ===\n');
+
+
 
     res.json({
       success: true,
@@ -412,8 +412,8 @@ export const updateClientProfile = async (req: Request, res: Response) => {
       message: 'Perfil actualizado correctamente'
     });
   } catch (error) {
-    console.error('❌ Error updating client profile:', error);
-    console.log('=== END UPDATE CLIENT PROFILE (ERROR) ===\n');
+    console.error("❌ Error updating client profile:");
+
     res.status(500).json({ error: 'Error interno del servidor' });
   }
 };
@@ -421,65 +421,60 @@ export const updateClientProfile = async (req: Request, res: Response) => {
 // Subir imagen de perfil
 export const uploadProfileImage = async (req: Request, res: Response) => {
   try {
-    console.log('🚀 Iniciando uploadProfileImage');
+
     const { userId } = req.params;
     const user = req.user;
     
-    console.log('👤 Usuario autenticado:', { userId: user?.id, targetUserId: userId, role: user?.role });
+
     
     if (!user || !user.id) {
-      console.log('❌ Usuario no autenticado');
+
       return res.status(401).json({ message: 'User not authenticated or user ID missing' });
     }
 
     // Verificar que el usuario puede subir imagen para este perfil
     const targetUserId = userId || user.id;
     if (user.id !== targetUserId && user.role !== 'ADMIN') {
-      console.log('❌ Sin permisos para subir imagen');
+
       return res.status(403).json({ message: 'No tienes permisos para subir imagen a este perfil' });
     }
 
     // Verificar que se subió un archivo
     if (!req.file) {
-      console.log('❌ No se encontró archivo en la petición');
+
       return res.status(400).json({ message: 'No se ha subido ningún archivo' });
     }
 
-    console.log('📁 Archivo recibido:', {
-      originalname: req.file.originalname,
-      mimetype: req.file.mimetype,
-      size: req.file.size,
-      path: req.file.path
-    });
+
 
     // Subir imagen a Cloudinary
-    console.log('☁️ Iniciando subida a Cloudinary...');
+
     const imageUrl = await uploadToCloudinary(req.file);
-    console.log('✅ Imagen subida exitosamente:', imageUrl);
+
 
     // Eliminar archivo temporal
     if (fs.existsSync(req.file.path)) {
-      console.log('🗑️ Eliminando archivo temporal:', req.file.path);
+
       fs.unlinkSync(req.file.path);
     }
 
     // Actualizar la imagen de perfil
-    console.log('💾 Actualizando perfil en base de datos para usuario:', targetUserId);
+
     const updatedProfile = await prisma.clientProfile.update({
       where: { userId: targetUserId },
       data: { profileImage: imageUrl }
     });
-    console.log('✅ Perfil actualizado en BD:', updatedProfile.profileImage);
+
 
     const response = {
       success: true,
       data: { profileImage: updatedProfile.profileImage },
       message: 'Imagen de perfil actualizada correctamente'
     };
-    console.log('📤 Enviando respuesta:', response);
+
     res.json(response);
   } catch (error) {
-     console.error('Error uploading profile image:', error);
+     console.error("Error uploading profile image:");
      
      // Limpiar archivo temporal en caso de error
      if (req.file && fs.existsSync(req.file.path)) {

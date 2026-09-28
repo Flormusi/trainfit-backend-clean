@@ -1,9 +1,9 @@
 import express from 'express';
-import { PrismaClient } from '@prisma/client';
+
 import { authenticateToken } from '../middleware/authenticateToken';
 
 const router = express.Router();
-const prisma = new PrismaClient();
+import prisma from '../utils/prisma';
 
 // Obtener recordatorios del usuario
 router.get('/', authenticateToken, async (req: any, res) => {
@@ -18,7 +18,7 @@ router.get('/', authenticateToken, async (req: any, res) => {
       data: reminders
     });
   } catch (error) {
-    console.error('Error al obtener recordatorios:', error);
+    console.error("Error al obtener recordatorios:");
     res.status(500).json({
       success: false,
       message: 'Error interno del servidor'
@@ -47,7 +47,7 @@ router.post('/', authenticateToken, async (req: any, res) => {
       data: reminder
     });
   } catch (error) {
-    console.error('Error al crear recordatorio:', error);
+    console.error("Error al crear recordatorio:");
     res.status(500).json({
       success: false,
       message: 'Error interno del servidor'
@@ -75,7 +75,7 @@ router.patch('/:id/sent', authenticateToken, async (req: any, res) => {
       data: reminder
     });
   } catch (error) {
-    console.error('Error al actualizar recordatorio:', error);
+    console.error("Error al actualizar recordatorio:");
     res.status(500).json({
       success: false,
       message: 'Error interno del servidor'
@@ -100,7 +100,7 @@ router.delete('/:id', authenticateToken, async (req: any, res) => {
       message: 'Recordatorio eliminado exitosamente'
     });
   } catch (error) {
-    console.error('Error al eliminar recordatorio:', error);
+    console.error("Error al eliminar recordatorio:");
     res.status(500).json({
       success: false,
       message: 'Error interno del servidor'

@@ -2,7 +2,7 @@ import dotenv from 'dotenv';
 import { createServer } from 'http';
 import { Server } from 'socket.io';
 import app from './app';
-import { PrismaClient } from '@prisma/client';
+
 import { CronService } from './services/cronService';
 
 // Cargar .env según entorno (dev/staging/prod) con fallback a .env
@@ -18,7 +18,7 @@ import { CronService } from './services/cronService';
 })();
 
 
-const prisma = new PrismaClient();
+import prisma from './utils/prisma';
 const PORT = process.env.PORT || 5004;
 
 // // Connect to MongoDB // Eliminar este bloque completo
@@ -37,7 +37,7 @@ async function runMigrations() {
     await prisma.$executeRaw`ALTER TABLE "PaymentPreference" ADD COLUMN IF NOT EXISTS "dueDate" TIMESTAMP`;
     console.log('✅ Migrations OK (membershipTier, nickname, dueDate)');
   } catch (e: any) {
-    console.log('⚠️ Migration warning:', e.message);
+    console.log("⚠️ Migration warning:");
   }
 }
 
@@ -75,16 +75,16 @@ async function main() {
 
     // Configurar eventos de Socket.IO
     io.on('connection', (socket) => {
-      console.log('🔌 Cliente conectado:', socket.id);
+      console.log("🔌 Cliente conectado:");
       
       // Unirse a sala específica del usuario
       socket.on('join-user-room', (userId) => {
         socket.join(`user-${userId}`);
-        console.log(`👤 Usuario ${userId} se unió a su sala`);
+        console.log('Socket joined user room');
       });
       
       socket.on('disconnect', () => {
-        console.log('🔌 Cliente desconectado:', socket.id);
+        console.log("🔌 Cliente desconectado:");
       });
     });
 
@@ -95,11 +95,11 @@ async function main() {
     CronService.initializeCronJobs();
 
     server.listen(PORT, () => {
-      console.log(`🚀 Server running on port ${PORT} with WebSocket support`);
+      console.log('Server listening with WebSocket support');
     });
 
   } catch (error) {
-    console.error('❌ Failed to connect to PostgreSQL via Prisma:', error);
+    console.error("❌ Failed to connect to PostgreSQL via Prisma:");
     await prisma.$disconnect();
     process.exit(1);
   }
@@ -107,7 +107,7 @@ async function main() {
 
 main()
   .catch(async (e) => {
-    console.error(e);
+    console.error('Server startup failed');
     await prisma.$disconnect();
     process.exit(1);
   });

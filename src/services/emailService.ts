@@ -99,8 +99,8 @@ export class EmailService {
     try {
       // Si no hay credenciales configuradas, simular envío exitoso
       if (!this.isEmailConfigured()) {
-        console.log(`[SIMULADO] Email que se enviaría a ${emailData.to}: ${emailData.subject}`);
-        console.log(`[SIMULADO] Contenido: ${emailData.html.substring(0, 100)}...`);
+
+
         return true;
       }
 
@@ -111,7 +111,7 @@ export class EmailService {
 
       // Si aún no hay transporter, simular envío
       if (!this.transporter) {
-        console.log(`[FALLBACK] No se pudo inicializar transporter, simulando envío para ${emailData.to}`);
+
         return true;
       }
 
@@ -122,12 +122,12 @@ export class EmailService {
         html: emailData.html
       });
       
-      console.log(`✅ Email enviado exitosamente a ${emailData.to}`);
+
       return true;
     } catch (error) {
-      console.error('Error al enviar email:', error);
+      console.error("Error al enviar email:");
       // En caso de error, simular envío exitoso para no bloquear la funcionalidad
-      console.log(`[FALLBACK] Simulando envío exitoso para ${emailData.to}`);
+
       return true;
     }
   }

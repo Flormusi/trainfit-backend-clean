@@ -1,54 +1,35 @@
 import { Request, Response, NextFunction } from 'express';
-import { PrismaClient, Role, Prisma } from '@prisma/client';
+import { Role, Prisma } from '@prisma/client';
 import { NotificationService } from '../services/notificationService';
 import { EmailService } from '../services/emailService';
 import { RequestWithUser } from '../types/express';
 
-const prisma = new PrismaClient();
+import prisma from '../utils/prisma';
+import { lookupExercises, lookupRoutineExercises } from '../services/exerciseLookup';
 
-// Helper function to enrich routine exercises with complete exercise data
-const enrichRoutineExercises = async (routines: any[]) => {
-  const enrichedRoutines = await Promise.all(
-    routines.map(async (routine) => {
-      if (routine.exercises && Array.isArray(routine.exercises)) {
-        const enrichedExercises = await Promise.all(
-          routine.exercises.map(async (exercise: any) => {
-            // Try to find the exercise in the Exercise table by name
-            const exerciseData = await prisma.exercise.findFirst({
-              where: {
-                name: { equals: exercise.name || exercise.exerciseId, mode: 'insensitive' }
-              }
-            });
+const mergeExerciseData = (exercise: any, exerciseData: any) => exerciseData ? ({
+  ...exercise,
+  imageUrl: exerciseData.imageUrl,
+  description: exerciseData.description,
+  type: exerciseData.type,
+  equipment: exerciseData.equipment,
+  difficulty: exerciseData.difficulty,
+  muscles: exerciseData.muscles
+}) : exercise;
 
-            // If found, merge the exercise data with the routine exercise data
-            if (exerciseData) {
-              return {
-                ...exercise,
-                imageUrl: exerciseData.imageUrl,
-                description: exerciseData.description,
-                type: exerciseData.type,
-                equipment: exerciseData.equipment,
-                difficulty: exerciseData.difficulty,
-                muscles: exerciseData.muscles
-              };
-            }
+const enrichExercises = async (exercises: any[], trainerId: string) => {
+  const matches = await lookupExercises(exercises, trainerId, { skipComplete: false, nameMode: 'equals' });
+  return exercises.map(exercise => mergeExerciseData(exercise, matches.get(exercise)));
+};
 
-            // If not found, return the original exercise
-            return exercise;
-          })
-        );
-
-        return {
-          ...routine,
-          exercises: enrichedExercises
-        };
-      }
-
-      return routine;
-    })
-  );
-
-  return enrichedRoutines;
+const enrichRoutines = async (routines: any[]) => {
+  const matches = await lookupRoutineExercises(routines, { skipComplete: false, nameMode: 'equals' });
+  return routines.map(routine => ({
+    ...routine,
+    exercises: Array.isArray(routine.exercises)
+      ? routine.exercises.map((exercise: any) => mergeExerciseData(exercise, matches.get(exercise)))
+      : routine.exercises
+  }));
 };
 
 // Get dashboard data
@@ -77,7 +58,7 @@ export const getUnassignedWorkoutPlans = async (req: Request, res: Response): Pr
 
     res.status(200).json(unassignedPlans);
   } catch (error) {
-    console.error('Error fetching unassigned workout plans:', error);
+    console.error("Error fetching unassigned workout plans:");
     res.status(500).json({ message: 'Internal server error while fetching unassigned workout plans' });
   }
 };
@@ -94,10 +75,10 @@ export const updateClientInfo = async (req: Request, res: Response): Promise<voi
     const { clientId } = req.params;
     const { name, email, phone, weight, height, age, gender, fitnessLevel, goals, initialObjective, trainingDaysPerWeek, medicalConditions, medications, injuries, membershipTier, nickname } = req.body;
 
-    console.log('=== updateClientInfo called ===');
-    console.log('Trainer ID:', user.id);
-    console.log('Client ID:', clientId);
-    console.log('Update data:', { name, email, phone, weight, height, age, gender, fitnessLevel, goals, initialObjective, trainingDaysPerWeek, medicalConditions, medications, injuries });
+
+
+
+
 
     // Actualizar nombre y email en User si se proporcionaron
     if (name || email) {
@@ -116,7 +97,7 @@ export const updateClientInfo = async (req: Request, res: Response): Promise<voi
     });
 
     if (!trainerClientRelation) {
-      console.log('No trainer-client relation found');
+
       res.status(403).json({ message: 'No tienes acceso a este cliente.' });
       return;
     }
@@ -142,7 +123,7 @@ export const updateClientInfo = async (req: Request, res: Response): Promise<voi
     if (membershipTier !== undefined) updateData.membershipTier = membershipTier || null;
     if (nickname !== undefined) updateData.nickname = nickname?.trim() || null;
 
-    console.log('Prepared update data:', updateData);
+
 
     // Verificar si el cliente tiene un perfil, si no, crearlo
     let clientProfile = await prisma.clientProfile.findUnique({
@@ -171,7 +152,7 @@ export const updateClientInfo = async (req: Request, res: Response): Promise<voi
       });
     }
 
-    console.log('Client profile updated successfully:', clientProfile);
+
 
     // Obtener la información completa del cliente para la respuesta
     const updatedClient = await prisma.user.findUnique({
@@ -223,7 +204,7 @@ export const updateClientInfo = async (req: Request, res: Response): Promise<voi
       }
     });
   } catch (error) {
-    console.error('Error updating client info:', error);
+    console.error("Error updating client info:");
     res.status(500).json({ 
       success: false, 
       message: 'Error interno del servidor al actualizar la información del cliente' 
@@ -319,7 +300,7 @@ export const getRoutineAssignments = async (req: Request, res: Response) => {
       message: 'Routine assignments retrieved successfully'
     });
   } catch (error) {
-    console.error('Error getting routine assignments:', error);
+    console.error("Error getting routine assignments:");
     res.status(500).json({
       status: 'error',
       message: 'Internal server error while getting routine assignments'
@@ -399,7 +380,7 @@ export const removeRoutineAssignment = async (req: Request, res: Response) => {
       message: 'Routine assignment removed successfully'
     });
   } catch (error) {
-    console.error('Error removing routine assignment:', error);
+    console.error("Error removing routine assignment:");
     res.status(500).json({
       status: 'error',
       message: 'Internal server error while removing routine assignment'
@@ -467,7 +448,7 @@ export const getDashboardData = async (req: Request, res: Response): Promise<voi
       averageProgress
     });
   } catch (error) {
-    console.error('Error fetching dashboard data:', error);
+    console.error("Error fetching dashboard data:");
     res.status(500).json({ message: 'Internal server error while fetching dashboard data' });
   }
 };
@@ -475,37 +456,37 @@ export const getDashboardData = async (req: Request, res: Response): Promise<voi
 // Exercise management
 export const getExercises = async (req: Request, res: Response): Promise<void> => {
   try {
-    console.log('Headers de la solicitud:', req.headers);
-    console.log('Usuario en la solicitud:', req.user);
+
+
 
     const user = req.user;
     if (!user || !user.id) {
-      console.log('Error: Usuario no autenticado o ID faltante');
+
       res.status(401).json({ message: 'User not authenticated or user ID missing' });
       return;
     }
 
-    console.log('Rol del usuario:', user.role);
+
     if (user.role !== 'TRAINER') {
-      console.log('Error: Usuario no es un trainer');
+
       res.status(403).json({ message: 'User is not authorized to access this route' });
       return;
     }
 
-    console.log('Buscando ejercicios para el trainer:', user.id);
+
     const exercises = await prisma.exercise.findMany({
       where: { trainerId: user.id }
     });
-    console.log('Ejercicios encontrados:', exercises);
+
 
     const response = {
       success: true,
       data: exercises
     };
-    console.log('Enviando respuesta:', response);
+
     res.status(200).json(response);
   } catch (error) {
-    console.error('Error fetching exercises:', error);
+    console.error("Error fetching exercises:");
     res.status(500).json({ message: 'Internal server error while fetching exercises' });
   }
 };
@@ -527,7 +508,7 @@ export const createExercise = async (req: Request, res: Response): Promise<void>
 
     res.status(201).json(exercise);
   } catch (error) {
-    console.error('Error creating exercise:', error);
+    console.error("Error creating exercise:");
     res.status(500).json({ message: 'Internal server error while creating exercise' });
   }
 };
@@ -548,7 +529,7 @@ export const updateExercise = async (req: Request, res: Response): Promise<void>
 
     res.status(200).json(exercise);
   } catch (error) {
-    console.error('Error updating exercise:', error);
+    console.error("Error updating exercise:");
     res.status(500).json({ message: 'Internal server error while updating exercise' });
   }
 };
@@ -571,7 +552,7 @@ export const updateRoutine = async (req: Request, res: Response): Promise<void> 
 
     res.status(200).json(routine);
   } catch (error) {
-    console.error('Error updating routine:', error);
+    console.error("Error updating routine:");
     res.status(500).json({ message: 'Internal server error while updating routine' });
   }
 };
@@ -591,7 +572,7 @@ export const deleteRoutine = async (req: Request, res: Response): Promise<void> 
 
     res.status(204).send();
   } catch (error) {
-    console.error('Error deleting routine:', error);
+    console.error("Error deleting routine:");
     res.status(500).json({ message: 'Internal server error while deleting routine' });
   }
 };
@@ -611,7 +592,7 @@ export const deleteExercise = async (req: Request, res: Response): Promise<void>
 
     res.status(204).send();
   } catch (error) {
-    console.error('Error deleting exercise:', error);
+    console.error("Error deleting exercise:");
     res.status(500).json({ message: 'Internal server error while deleting exercise' });
   }
 };
@@ -631,16 +612,11 @@ export const getRoutines = async (req: Request, res: Response): Promise<void> =>
     });
 
     // Enriquecer ejercicios con datos completos
-    const enrichedRoutines = await Promise.all(
-      routines.map(async (routine) => ({
-        ...routine,
-        exercises: await enrichRoutineExercises(routine.exercises as any[])
-      }))
-    );
+    const enrichedRoutines = await enrichRoutines(routines);
 
     res.status(200).json(enrichedRoutines);
   } catch (error) {
-    console.error('Error fetching routines:', error);
+    console.error("Error fetching routines:");
     res.status(500).json({ message: 'Internal server error while fetching routines' });
   }
 };
@@ -672,12 +648,12 @@ export const getRoutineById = async (req: Request, res: Response): Promise<void>
     // Enriquecer ejercicios con datos completos
     const enrichedRoutine = {
       ...routine,
-      exercises: await enrichRoutineExercises(routine.exercises as any[])
+      exercises: await enrichExercises(routine.exercises as any[], user.id)
     };
 
     res.status(200).json({ data: enrichedRoutine });
   } catch (error) {
-    console.error('Error fetching routine by ID:', error);
+    console.error("Error fetching routine by ID:");
     res.status(500).json({ message: 'Internal server error while fetching routine' });
   }
 };
@@ -698,7 +674,7 @@ export const getNutritionPlans = async (req: Request, res: Response): Promise<vo
 
     res.status(200).json(nutritionPlans);
   } catch (error) {
-    console.error('Error fetching nutrition plans:', error);
+    console.error("Error fetching nutrition plans:");
     res.status(500).json({ message: 'Internal server error while fetching nutrition plans' });
   }
 };
@@ -720,7 +696,7 @@ export const createNutritionPlan = async (req: Request, res: Response): Promise<
 
     res.status(201).json(nutritionPlan);
   } catch (error) {
-    console.error('Error creating nutrition plan:', error);
+    console.error("Error creating nutrition plan:");
     res.status(500).json({ message: 'Internal server error while creating nutrition plan' });
   }
 };
@@ -741,7 +717,7 @@ export const updateNutritionPlan = async (req: Request, res: Response): Promise<
 
     res.status(200).json(nutritionPlan);
   } catch (error) {
-    console.error('Error updating nutrition plan:', error);
+    console.error("Error updating nutrition plan:");
     res.status(500).json({ message: 'Internal server error while updating nutrition plan' });
   }
 };
@@ -761,7 +737,7 @@ export const deleteNutritionPlan = async (req: Request, res: Response): Promise<
 
     res.status(204).send();
   } catch (error) {
-    console.error('Error deleting nutrition plan:', error);
+    console.error("Error deleting nutrition plan:");
     res.status(500).json({ message: 'Internal server error while deleting nutrition plan' });
   }
 };
@@ -782,7 +758,7 @@ export const getProfile = async (req: Request, res: Response): Promise<void> => 
 
     res.status(200).json(profile);
   } catch (error) {
-    console.error('Error fetching profile:', error);
+    console.error("Error fetching profile:");
     res.status(500).json({ message: 'Internal server error while fetching profile' });
   }
 };
@@ -803,7 +779,7 @@ export const updateProfile = async (req: Request, res: Response): Promise<void> 
 
     res.status(200).json(profile);
   } catch (error) {
-    console.error('Error updating profile:', error);
+    console.error("Error updating profile:");
     res.status(500).json({ message: 'Internal server error while updating profile' });
   }
 };
@@ -869,7 +845,7 @@ export const getAnalytics = async (req: Request, res: Response): Promise<void> =
       progressUpdates: analytics[2]
     });
   } catch (error) {
-    console.error('Error fetching analytics:', error);
+    console.error("Error fetching analytics:");
     res.status(500).json({ message: 'Internal server error while fetching analytics' });
   }
 };
@@ -947,7 +923,7 @@ export const getChartsData = async (req: Request, res: Response): Promise<void> 
 
     res.status(200).json({ weightData, trainingsData, clientsData });
   } catch (error) {
-    console.error('Error fetching charts data:', error);
+    console.error("Error fetching charts data:");
     res.status(500).json({ message: 'Internal server error' });
   }
 };
@@ -990,7 +966,7 @@ export const getTrainerClients = async (req: Request, res: Response): Promise<vo
 
     res.status(200).json(clients);
   } catch (error) {
-    console.error('Error fetching trainer clients:', error);
+    console.error("Error fetching trainer clients:");
     res.status(500).json({ message: 'Internal server error while fetching trainer clients' });
   }
 };
@@ -1075,7 +1051,7 @@ export const createClientRoutine = async (req: Request, res: Response): Promise<
         routineUrl: `${process.env.FRONTEND_URL || 'http://localhost:5173'}/client/${clientId}/routine/${routine.id}`
       });
     } catch (emailError) {
-      console.warn('⚠️ Email no enviado (configuración pendiente):', emailError);
+      console.warn("⚠️ Email no enviado (configuración pendiente):");
     }
     
     res.status(201).json({
@@ -1084,7 +1060,7 @@ export const createClientRoutine = async (req: Request, res: Response): Promise<
       message: 'Rutina creada y notificaciones enviadas exitosamente'
     });
   } catch (error) {
-    console.error('Error creating client routine:', error);
+    console.error("Error creating client routine:");
     if (error instanceof Prisma.PrismaClientKnownRequestError) {
       res.status(400).json({
         status: 'error',
@@ -1209,7 +1185,7 @@ export const assignRoutineToClient = async (req: Request, res: Response): Promis
         endDate
       });
     } catch (emailError) {
-      console.warn('⚠️ Email no enviado (configuración pendiente):', emailError);
+      console.warn("⚠️ Email no enviado (configuración pendiente):");
     }
 
     res.status(201).json({
@@ -1218,7 +1194,7 @@ export const assignRoutineToClient = async (req: Request, res: Response): Promis
       message: 'Rutina asignada y notificaciones enviadas exitosamente'
     });
   } catch (error) {
-    console.error('Error assigning routine:', error);
+    console.error("Error assigning routine:");
     if (error instanceof Prisma.PrismaClientKnownRequestError) {
       res.status(400).json({
         status: 'error',
@@ -1252,7 +1228,7 @@ export const getClientNotifications = async (req: Request, res: Response): Promi
       data: notifications
     });
   } catch (error: any) {
-    console.error('Error al obtener notificaciones:', error);
+    console.error("Error al obtener notificaciones:");
     res.status(500).json({
       success: false,
       message: error.message || 'Error del servidor'
@@ -1283,7 +1259,7 @@ export const markNotificationAsRead = async (req: Request, res: Response): Promi
       message: 'Notificación marcada como leída'
     });
   } catch (error: any) {
-    console.error('Error al marcar notificación como leída:', error);
+    console.error("Error al marcar notificación como leída:");
     res.status(500).json({
       success: false,
       message: error.message || 'Error del servidor'
@@ -1342,7 +1318,7 @@ export const getClientProgressByTrainer = async (req: Request, res: Response) =>
     });
     
     // Enrich routines with complete exercise data
-    const enrichedRoutines = await enrichRoutineExercises(routines);
+    const enrichedRoutines = await enrichRoutines(routines);
     
     // Mapear rutinas al formato esperado por el frontend
     const formattedRoutines = enrichedRoutines.map(routine => ({
@@ -1366,7 +1342,7 @@ export const getClientProgressByTrainer = async (req: Request, res: Response) =>
     
     res.status(200).json(responseData);
   } catch (error) {
-    console.error('Error fetching client progress:', error);
+    console.error("Error fetching client progress:");
     res.status(500).json({
       status: 'error',
       message: 'Failed to fetch progress data'
@@ -1410,7 +1386,7 @@ export const getAllWorkoutPlans = async (req: Request, res: Response): Promise<v
 
     res.status(200).json(workoutPlans);
   } catch (error) {
-    console.error('Error fetching workout plans:', error);
+    console.error("Error fetching workout plans:");
     res.status(500).json({ message: 'Internal server error while fetching workout plans' });
   }
 };
@@ -1446,7 +1422,7 @@ export const createWorkoutPlan = async (req: Request, res: Response): Promise<vo
 
     res.status(201).json(workoutPlan);
   } catch (error) {
-    console.error('Error creating workout plan:', error);
+    console.error("Error creating workout plan:");
     res.status(500).json({ message: 'Internal server error while creating workout plan' });
   }
 };
@@ -1471,7 +1447,7 @@ export const deleteWorkoutPlan = async (req: Request, res: Response): Promise<vo
 
     res.status(204).send();
   } catch (error) {
-    console.error('Error deleting workout plan:', error);
+    console.error("Error deleting workout plan:");
     res.status(500).json({ message: 'Internal server error while deleting workout plan' });
   }
 };
@@ -1491,7 +1467,7 @@ export const markAllNotificationsAsRead = async (req: Request, res: Response): P
       message: 'Todas las notificaciones marcadas como leídas'
     });
   } catch (error: any) {
-    console.error('Error al marcar todas las notificaciones como leídas:', error);
+    console.error("Error al marcar todas las notificaciones como leídas:");
     res.status(500).json({
       success: false,
       message: error.message || 'Error del servidor'
@@ -1515,7 +1491,7 @@ export const getUnreadNotifications = async (req: Request, res: Response): Promi
       count: notifications.length
     });
   } catch (error: any) {
-    console.error('Error al obtener notificaciones no leídas:', error);
+    console.error("Error al obtener notificaciones no leídas:");
     res.status(500).json({
       success: false,
       message: error.message || 'Error del servidor'
@@ -1546,7 +1522,7 @@ export const createTestNotification = async (req: Request, res: Response): Promi
       message: 'Notificación de prueba creada'
     });
   } catch (error: any) {
-    console.error('Error al crear notificación de prueba:', error);
+    console.error("Error al crear notificación de prueba:");
     res.status(500).json({
       success: false,
       message: error.message || 'Error del servidor'
@@ -1565,10 +1541,10 @@ export const removeClientRoutine = async (req: Request, res: Response): Promise<
 
     const { clientId, routineId } = req.params;
 
-    console.log('=== removeClientRoutine called ===');
-    console.log('Trainer ID:', user.id);
-    console.log('Client ID:', clientId);
-    console.log('Routine ID:', routineId);
+
+
+
+
 
     // Verificar que el cliente está asociado al entrenador
     const trainerClientRelation = await prisma.trainerClient.findFirst({
@@ -1579,7 +1555,7 @@ export const removeClientRoutine = async (req: Request, res: Response): Promise<
     });
 
     if (!trainerClientRelation) {
-      console.log('No trainer-client relation found');
+
       res.status(403).json({ message: 'No tienes acceso a este cliente.' });
       return;
     }
@@ -1592,7 +1568,7 @@ export const removeClientRoutine = async (req: Request, res: Response): Promise<
     });
 
     if (!routine) {
-      console.log('Routine not found by ID:', routineId);
+
       res.status(404).json({ message: 'Rutina no encontrada.' });
       return;
     }
@@ -1610,26 +1586,26 @@ export const removeClientRoutine = async (req: Request, res: Response): Promise<
     const hasAccess = routineAssignment || routine.trainerId === user.id;
     
     if (!hasAccess) {
-      console.log('Trainer does not have access to this routine');
+
       res.status(403).json({ message: 'No tienes acceso a esta rutina.' });
       return;
     }
 
-    console.log('Routine found, proceeding to delete:', routine.name);
+
 
     // Eliminar la rutina
     await prisma.routine.delete({
       where: { id: routineId }
     });
 
-    console.log('Routine deleted successfully');
+
 
     res.status(200).json({ 
       success: true, 
       message: 'Rutina eliminada exitosamente' 
     });
   } catch (error) {
-    console.error('Error removing client routine:', error);
+    console.error("Error removing client routine:");
     res.status(500).json({ 
       success: false, 
       message: 'Error interno del servidor al eliminar la rutina' 
@@ -1648,10 +1624,10 @@ export const resendRoutineEmail = async (req: Request, res: Response): Promise<v
 
     const { clientId, routineId } = req.params;
 
-    console.log('=== resendRoutineEmail called ===');
-    console.log('Trainer ID:', user.id);
-    console.log('Client ID:', clientId);
-    console.log('Routine ID:', routineId);
+
+
+
+
 
     // Verificar que el cliente está asociado al entrenador
     const trainerClientRelation = await prisma.trainerClient.findFirst({
@@ -1665,7 +1641,7 @@ export const resendRoutineEmail = async (req: Request, res: Response): Promise<v
     });
 
     if (!trainerClientRelation) {
-      console.log('No trainer-client relation found');
+
       res.status(403).json({ message: 'No tienes acceso a este cliente.' });
       return;
     }
@@ -1678,7 +1654,7 @@ export const resendRoutineEmail = async (req: Request, res: Response): Promise<v
     });
 
     if (!routine) {
-      console.log('Routine not found by ID:', routineId);
+
       res.status(404).json({ message: 'Rutina no encontrada.' });
       return;
     }
@@ -1696,12 +1672,12 @@ export const resendRoutineEmail = async (req: Request, res: Response): Promise<v
     const hasAccess = routineAssignment || routine.trainerId === user.id;
     
     if (!hasAccess) {
-      console.log('Trainer does not have access to this routine');
+
       res.status(403).json({ message: 'No tienes acceso a esta rutina.' });
       return;
     }
 
-    console.log('Routine found, proceeding to resend email:', routine.name);
+
 
     // Buscar la asignación de rutina para obtener las fechas
     let finalRoutineAssignment = routineAssignment;
@@ -1733,9 +1709,9 @@ export const resendRoutineEmail = async (req: Request, res: Response): Promise<v
         }),
         new Promise((_, reject) => setTimeout(() => reject(new Error('Email timeout')), 15000))
       ]);
-      console.log('✅ Email enviado correctamente');
+
     } catch (emailError) {
-      console.warn('⚠️ Email no enviado:', emailError);
+      console.warn("⚠️ Email no enviado:");
     }
 
     // Crear notificación de reenvío exitoso
@@ -1749,14 +1725,14 @@ export const resendRoutineEmail = async (req: Request, res: Response): Promise<v
       }
     });
 
-    console.log('Routine email resent successfully');
+
 
     res.status(200).json({ 
       success: true, 
       message: `Email de la rutina "${routine.name}" reenviado exitosamente a ${trainerClientRelation.client.email}` 
     });
   } catch (error) {
-    console.error('Error resending routine email:', error);
+    console.error("Error resending routine email:");
     res.status(500).json({ 
       success: false, 
       message: 'Error interno del servidor al reenviar el email' 
