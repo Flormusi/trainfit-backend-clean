@@ -1695,8 +1695,10 @@ export const resendRoutineEmail = async (req: Request, res: Response): Promise<v
     const endDate = finalRoutineAssignment?.endDate?.toISOString() || new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(); // 30 días desde hoy
 
     // Reenviar email de notificación al cliente (timeout de 15s para no bloquear)
+    let emailSent = false;
+    let emailTimeout: NodeJS.Timeout | undefined;
     try {
-      await Promise.race([
+      emailSent = await Promise.race<boolean>([
         EmailService.sendRoutineAssignmentEmail({
           clientName: trainerClientRelation.client.name || 'Cliente',
           clientEmail: trainerClientRelation.client.email,
@@ -1707,11 +1709,22 @@ export const resendRoutineEmail = async (req: Request, res: Response): Promise<v
           startDate,
           endDate
         }),
-        new Promise((_, reject) => setTimeout(() => reject(new Error('Email timeout')), 15000))
+        new Promise<boolean>((_, reject) => {
+          emailTimeout = setTimeout(() => reject(new Error('Email timeout')), 15000);
+        })
       ]);
-
     } catch (emailError) {
-      console.warn("⚠️ Email no enviado:");
+      console.warn('Email delivery failed: timeout');
+    } finally {
+      if (emailTimeout) clearTimeout(emailTimeout);
+    }
+
+    if (!emailSent) {
+      res.status(502).json({
+        success: false,
+        message: 'No se pudo enviar el email. Revisá la configuración de correo e intentá nuevamente.'
+      });
+      return;
     }
 
     // Crear notificación de reenvío exitoso

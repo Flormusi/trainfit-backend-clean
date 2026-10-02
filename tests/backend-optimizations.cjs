@@ -6,6 +6,83 @@ const prisma = require('../src/utils/prisma').default;
 const { lookupExercises, lookupRoutineExercises } = require('../src/services/exerciseLookup');
 const { requestLogging } = require('../src/middleware/requestLogging');
 
+test('email delivery reports configuration and provider failures instead of simulating success', async () => {
+  const { EmailService } = require('../src/services/emailService');
+  const saved = {
+    EMAIL_SERVICE: process.env.EMAIL_SERVICE,
+    EMAIL_USER: process.env.EMAIL_USER,
+    EMAIL_PASS: process.env.EMAIL_PASS
+  };
+  const originalTransporter = EmailService.transporter;
+  const originalWarn = console.warn;
+  const originalError = console.error;
+  const logs = [];
+  console.warn = message => logs.push(message);
+  console.error = message => logs.push(message);
+
+  try {
+    delete process.env.EMAIL_SERVICE;
+    delete process.env.EMAIL_USER;
+    delete process.env.EMAIL_PASS;
+    EmailService.transporter = null;
+    assert.equal(await EmailService.sendEmail({ to: 'test@example.com', subject: 'Test', html: '<p>Test</p>' }), false);
+
+    process.env.EMAIL_USER = 'configured@example.com';
+    process.env.EMAIL_PASS = 'SECRET';
+    EmailService.transporter = { sendMail: async () => { const error = new Error('SECRET'); error.code = 'EAUTH'; throw error; } };
+    assert.equal(await EmailService.sendEmail({ to: 'test@example.com', subject: 'Test', html: '<p>Test</p>' }), false);
+    assert.equal(JSON.stringify(logs).includes('SECRET'), false);
+
+    EmailService.transporter = { sendMail: async () => ({ messageId: 'sent' }) };
+    assert.equal(await EmailService.sendEmail({ to: 'test@example.com', subject: 'Test', html: '<p>Test</p>' }), true);
+  } finally {
+    for (const [key, value] of Object.entries(saved)) {
+      if (value === undefined) delete process.env[key];
+      else process.env[key] = value;
+    }
+    EmailService.transporter = originalTransporter;
+    console.warn = originalWarn;
+    console.error = originalError;
+  }
+});
+
+test('manual routine email endpoint returns an error and creates no success notification when delivery fails', async () => {
+  const { EmailService } = require('../src/services/emailService');
+  const originals = {
+    relation: prisma.trainerClient.findFirst,
+    routine: prisma.routine.findUnique,
+    assignment: prisma.routineAssignment.findFirst,
+    notification: prisma.notification.create,
+    send: EmailService.sendRoutineAssignmentEmail
+  };
+  let notificationCreated = false, body, status;
+  prisma.trainerClient.findFirst = async () => ({ client: { name: 'Client', email: 'client@example.com' } });
+  prisma.routine.findUnique = async () => ({ id: 'routine', trainerId: 'trainer', name: 'Routine' });
+  prisma.routineAssignment.findFirst = async () => ({
+    startDate: new Date('2026-01-01T00:00:00Z'),
+    endDate: new Date('2026-02-01T00:00:00Z')
+  });
+  prisma.notification.create = async () => { notificationCreated = true; };
+  EmailService.sendRoutineAssignmentEmail = async () => false;
+
+  try {
+    const { resendRoutineEmail } = require('../src/controllers/trainerController');
+    await resendRoutineEmail(
+      { user: { id: 'trainer', role: 'TRAINER', name: 'Trainer' }, params: { clientId: 'client', routineId: 'routine' } },
+      { status(code) { status = code; return this; }, json(value) { body = value; } }
+    );
+    assert.equal(status, 502);
+    assert.equal(body.success, false);
+    assert.equal(notificationCreated, false);
+  } finally {
+    prisma.trainerClient.findFirst = originals.relation;
+    prisma.routine.findUnique = originals.routine;
+    prisma.routineAssignment.findFirst = originals.assignment;
+    prisma.notification.create = originals.notification;
+    EmailService.sendRoutineAssignmentEmail = originals.send;
+  }
+});
+
 test('batch lookup: ID first, fallback names, deduplication and trainer scope', async () => {
   const calls = [];
   const original = prisma.exercise.findMany;

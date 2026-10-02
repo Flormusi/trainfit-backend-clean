@@ -97,11 +97,10 @@ export class EmailService {
    */
   static async sendEmail(emailData: EmailData): Promise<boolean> {
     try {
-      // Si no hay credenciales configuradas, simular envío exitoso
+      // A missing configuration is a real delivery failure, not a successful simulation.
       if (!this.isEmailConfigured()) {
-
-
-        return true;
+        console.warn('Email delivery disabled: configuration missing');
+        return false;
       }
 
       // Inicializar transporter si no existe
@@ -109,10 +108,10 @@ export class EmailService {
         this.transporter = this.initializeTransporter();
       }
 
-      // Si aún no hay transporter, simular envío
+      // A configured provider must always produce a transporter.
       if (!this.transporter) {
-
-        return true;
+        console.error('Email delivery failed: transporter unavailable');
+        return false;
       }
 
       await this.transporter.sendMail({
@@ -125,10 +124,19 @@ export class EmailService {
 
       return true;
     } catch (error) {
-      console.error("Error al enviar email:");
-      // En caso de error, simular envío exitoso para no bloquear la funcionalidad
+      const code = typeof error === 'object' && error !== null && 'code' in error
+        ? String((error as { code?: unknown }).code)
+        : '';
 
-      return true;
+      if (code === 'EAUTH') {
+        console.error('Email delivery failed: authentication rejected');
+      } else if (code === 'ETIMEDOUT' || code === 'ECONNECTION' || code === 'ECONNREFUSED') {
+        console.error('Email delivery failed: SMTP connection error');
+      } else {
+        console.error('Email delivery failed: provider error');
+      }
+
+      return false;
     }
   }
 
